@@ -1,21 +1,25 @@
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, ScrollView } from 'react-native';
 
 export default function SavingsPage() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Savings Planner</Text>
+    <View style={{ flex: 1 }}>
+      <View>
+        <Text>Savings Planner</Text>
+      </View>
+
+      <ScrollView>
+        <View style={styles.container}>
+          <View style={{ height: 200, backgroundColor: 'red' }} />
+          <View style={{ height: 200, backgroundColor: 'yellow' }} />
+          <View style={{ height: 200, backgroundColor: 'green' }} />
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#25292e',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    color: '#fff',
+    padding: 20,
   },
 });
