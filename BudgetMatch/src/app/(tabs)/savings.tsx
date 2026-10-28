@@ -1,10 +1,13 @@
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Button } from 'react-native';
 import { useState } from 'react';
+import AnimatedCircularProgress from
+  'react-native-circular-progress-indicator';
 import { 
   useFonts, 
   IBMPlexSans_400Regular, 
   IBMPlexSans_700Bold 
 } from '@expo-google-fonts/ibm-plex-sans';
+import CircularProgress from 'react-native-circular-progress-indicator';
 
 export default function SavingsPage() {
 
@@ -105,9 +108,15 @@ export default function SavingsPage() {
                   ? styles.mediumPriorityTask
                   : styles.lowPriorityTask,
             ]}>
-              <Text style={styles.taskText}>{goal.name}</Text>
-              <Text>Target: ${goal.amount.toLocaleString()}</Text>
-              <Text>Contribution: {goal.contribution}%</Text>
+              <CircularProgress
+                value={50}
+                valueSuffix='%'
+                radius={30}/>
+              <View>
+                <Text style={styles.taskText}>{goal.name}</Text>
+                <Text>Target: ${goal.amount.toLocaleString()}</Text>
+                <Text>Contribution: {goal.contribution}%</Text>
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -121,7 +130,17 @@ export default function SavingsPage() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create a Goal</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create a Goal</Text>
+
+              <Pressable
+                onPress={closeModal}
+                style={styles.closeButton}
+                hitSlop={10}
+              >
+                <Text style={styles.closeButtonText}>x</Text>
+              </Pressable>
+            </View>
 
             <Text>Enter the details for your savings goal.</Text>
 
@@ -189,12 +208,6 @@ export default function SavingsPage() {
               >
                 <Text style={styles.createGoalButtonText}>Create Goal</Text>
               </Pressable>
-              <Pressable
-                style={styles.closeButton}
-                onPress={closeModal}
-              >
-                <Text style={styles.closeButtonText}>Cancel</Text>
-              </Pressable>
             </View>
           </View>
         </View>
@@ -260,8 +273,9 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderRadius: 10,
     backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 30
   },
   highPriorityTask: {
     marginTop: 15,
@@ -321,20 +335,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  closeButton: {
-    backgroundColor: 'red',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  closeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
   createGoalButton: {
     backgroundColor: 'green',
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     borderRadius: 8,
   },
   createGoalButtonText: {
@@ -399,8 +403,26 @@ const styles = StyleSheet.create({
     gap: 16
   },
   submitPanel: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    gap: 40
-  }
+    alignItems: 'center',
+    width: '100%'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '100%'
+  },
+
+  closeButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+
+  closeButtonText: {
+    fontSize: 30,
+    color: '#666',
+    lineHeight: 32,
+  },
 });
