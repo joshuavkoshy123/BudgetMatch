@@ -1,5 +1,6 @@
-import { Stack } from "expo-router";
+import { useEffect, useState } from 'react';
+import { Slot, useRouter, useSegments } from 'expo-router';
 
 export default function RootLayout() {
-  return <Stack />;
+  return <Slot />;
 }
