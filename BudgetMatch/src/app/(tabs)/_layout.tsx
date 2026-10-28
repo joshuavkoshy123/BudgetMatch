@@ -8,20 +8,20 @@ export default function TabLayout() {
         indicatorColor="rgba(255, 211, 61, 0.2)"
         rippleColor="rgba(255, 211, 61, 0.3)"
     >
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'house', selected: 'house.fill' }}
-          md="home"
-        />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="savings">
-        <NativeTabs.Trigger.Label>Savings</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
-          md="info"
-        />
-      </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="savings">
+            <NativeTabs.Trigger.Label>Savings Planner</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon
+            sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
+            md="info"
+            />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="expenses">
+            <NativeTabs.Trigger.Label>Expense Tracker</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon
+            sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
+            md="info"
+            />
+        </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
