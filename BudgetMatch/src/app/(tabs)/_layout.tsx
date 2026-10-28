@@ -3,8 +3,8 @@ import { NativeTabs } from 'expo-router/native-tabs';
 export default function TabLayout() {
   return (
     <NativeTabs
-        tintColor="#ffd33d"
-        backgroundColor="#25292e"
+        tintColor="white"
+        backgroundColor="#2468C1"
         indicatorColor="rgba(255, 211, 61, 0.2)"
         rippleColor="rgba(255, 211, 61, 0.3)"
     >
