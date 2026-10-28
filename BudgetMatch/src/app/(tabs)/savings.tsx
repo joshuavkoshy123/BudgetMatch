@@ -1,12 +1,6 @@
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Button } from 'react-native';
 import { useState } from 'react';
-import AnimatedCircularProgress from
-  'react-native-circular-progress-indicator';
-import { 
-  useFonts, 
-  IBMPlexSans_400Regular, 
-  IBMPlexSans_700Bold 
-} from '@expo-google-fonts/ibm-plex-sans';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput } from 'react-native';
+import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import CircularProgress from 'react-native-circular-progress-indicator';
 
 export default function SavingsPage() {
@@ -94,7 +88,7 @@ export default function SavingsPage() {
             style={styles.addTask}
             onPress={() => setModalShown(true)}
           >
-            <Text style={styles.taskText}>Create a goal +</Text>
+            <Text style={styles.taskText}>+ Create a goal</Text>
           </Pressable>
           
           {sortedGoals.map(goal => (
@@ -144,7 +138,7 @@ export default function SavingsPage() {
 
             <Text>Enter the details for your savings goal.</Text>
 
-            <Text>Goal:</Text>
+            <Text style={styles.modalLabel}>Goal</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. Emergency Fund"
@@ -152,7 +146,7 @@ export default function SavingsPage() {
               onChangeText={setGoal}
             />
 
-            <Text>Amount:</Text>
+            <Text style={styles.modalLabel}>Amount ($)</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 5000"
@@ -161,7 +155,7 @@ export default function SavingsPage() {
               keyboardType="decimal-pad"
             />
 
-            <Text>Contribution %:</Text>
+            <Text style={styles.modalLabel}>Contribution (%)</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 10"
@@ -170,7 +164,7 @@ export default function SavingsPage() {
               keyboardType="decimal-pad"
             />
 
-            <Text>Priority:</Text>
+            <Text style={styles.modalLabel}>Priority</Text>
             <View style={styles.priorityPanel}>
               <Pressable
                 onPress={() => setPriority('High')}
@@ -179,7 +173,7 @@ export default function SavingsPage() {
                   priority === 'High' && styles.highButtonFilled
                 ]}
               >
-                <Text>High</Text>
+                <Text style={styles.modalLabel}>High</Text>
               </Pressable>
               <Pressable
                 onPress={() => setPriority('Medium')}
@@ -188,7 +182,7 @@ export default function SavingsPage() {
                   priority === 'Medium' && styles.mediumButtonFilled
                 ]}
               >
-                <Text>Medium</Text>
+                <Text style={styles.modalLabel}>Medium</Text>
               </Pressable>
               <Pressable
                 onPress={() => setPriority('Low')}
@@ -197,7 +191,7 @@ export default function SavingsPage() {
                   priority === 'Low' && styles.lowButtonFilled
                 ]}
               >
-                <Text>Low</Text>
+                <Text style={styles.modalLabel}>Low</Text>
               </Pressable>
             </View>
 
@@ -219,6 +213,8 @@ export default function SavingsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
     backgroundColor: '#25292e',
   },
@@ -228,8 +224,9 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   taskPanel: {
-    padding: 15,
+    width: '80%',
     height: 470,
+    padding: 15,
     backgroundColor: '#043574',
     borderRadius: 10,
     marginLeft: 30,
@@ -253,6 +250,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   amountText: {
+    paddingBottom: 20,
     color: '#fff',
     fontSize: 20,
     fontFamily: 'IBMPlexSans_400Regular'
@@ -318,8 +316,8 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 20,
   },
   modalContent: {
@@ -344,6 +342,9 @@ const styles = StyleSheet.create({
   createGoalButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  modalLabel: {
+    fontSize: 16
   },
   input: {
     width: '100%',
