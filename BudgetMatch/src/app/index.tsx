@@ -9,6 +9,8 @@ export default function Index() {
     password: ""
   });
 
+  const [isLoginValid, setIsLoginValid] = useState(true);
+
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
@@ -22,6 +24,9 @@ export default function Index() {
     if (form.username === "TestUser" && form.password === "Budget123") {
       router.replace("/(tabs)/savings");
     }
+    else {
+      setIsLoginValid(false);
+    }
   }
 
   return (
@@ -34,6 +39,7 @@ export default function Index() {
         <Text style={styles.formLabel}>Password</Text>
         <TextInput id="password" style={styles.formField}
           onChangeText={value => setForm({...form, password: value})} />
+        {isLoginValid ? <></> : <Text style={styles.errorText}>Invalid username or password. Please try again.</Text>}
         <Pressable style={styles.formButton} onPress={login}>
           <Text style={[styles.formLabel, styles.formButtonText]}>Log In</Text>
         </Pressable>
@@ -68,6 +74,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     fontSize: 16,
+  },
+  errorText: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   formButton: {
     width: "30%",

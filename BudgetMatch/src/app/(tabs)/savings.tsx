@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput } from 'react-native';
-import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import CircularProgress from 'react-native-circular-progress-indicator';
+import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
 export default function SavingsPage() {
 
@@ -19,13 +19,23 @@ export default function SavingsPage() {
   const [contribution, setContribution] = useState('');
   const [priority, setPriority] = useState('');
 
-  // store goals
-  const [goals, setGoals] = useState<Goal[]>([]);
-
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
   });
+
+  // store goals
+  const [goals, setGoals] = useState<Goal[]>([]);
+
+  const [isFormValid, setIsFormValid] = useState({
+    goal: true,
+    amount: true,
+    contribution: true,
+    priority: true
+  });
+
+  const amountRegexPattern = /^\d*\.?\d{0,2}$/;
+  const contributionRegexPattern = /^\d*\.?\d*$/;
 
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {
@@ -34,6 +44,32 @@ export default function SavingsPage() {
 
   // add goal to list of goals
   const addGoal = () => {
+    // validate user input for form fields
+    let isCurrentFormValid = {
+      goal: true,
+      amount: true,
+      contribution: true,
+      priority: true
+    };
+
+    if (goal.length === 0) {
+      isCurrentFormValid.goal = false;
+    }
+    if (amount.length === 0 || Number(amount) === 0) {
+      isCurrentFormValid.amount = false;
+    }
+    if (contribution.length === 0 || Number(contribution) <= 0 || Number(contribution) > 100) {
+      isCurrentFormValid.contribution = false;
+    }
+    if (priority.length === 0) {
+      isCurrentFormValid.priority = false;
+    }
+
+    setIsFormValid(isCurrentFormValid);
+    if (Object.values(isCurrentFormValid).some(valid => !valid)) {
+      return;
+    }
+
     const newGoal = {
       id: Date.now().toString(),
       name: goal,
@@ -58,6 +94,12 @@ export default function SavingsPage() {
     setAmount('');
     setContribution('');
     setPriority('');
+    setIsFormValid({
+      goal: true,
+      amount: true,
+      contribution: true,
+      priority: true
+    });
   }
 
   // sort goals
@@ -145,24 +187,35 @@ export default function SavingsPage() {
               value={goal}
               onChangeText={setGoal}
             />
+            {isFormValid.goal ? <></> : <Text style={styles.errorText}>Please enter a goal.</Text>}
 
             <Text style={styles.modalLabel}>Amount ($)</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 5000"
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={value => {
+                if (amountRegexPattern.test(value)) {
+                  setAmount(value);
+                }
+              }}
               keyboardType="decimal-pad"
             />
+            {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
 
             <Text style={styles.modalLabel}>Contribution (%)</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 10"
               value={contribution}
-              onChangeText={setContribution}
+              onChangeText={value => {
+                if (contributionRegexPattern.test(value)) {
+                  setContribution(value);
+                }
+              }}
               keyboardType="decimal-pad"
             />
+            {isFormValid.contribution ? <></> : <Text style={styles.errorText}>Please enter a valid contribution.</Text>}
 
             <Text style={styles.modalLabel}>Priority</Text>
             <View style={styles.priorityPanel}>
@@ -194,6 +247,7 @@ export default function SavingsPage() {
                 <Text style={styles.modalLabel}>Low</Text>
               </Pressable>
             </View>
+            {isFormValid.priority ? <></> : <Text style={styles.errorText}>Please select a priority.</Text>}
 
             <View style={styles.submitPanel}>
               <Pressable 
@@ -407,6 +461,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%'
+  },
+  errorText: {
+    color: "red",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   modalHeader: {
     flexDirection: 'row',
