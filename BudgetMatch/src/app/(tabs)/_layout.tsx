@@ -15,13 +15,6 @@ export default function TabLayout() {
             md="info"
             />
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="expenses">
-            <NativeTabs.Trigger.Label>Expense Tracker</NativeTabs.Trigger.Label>
-            <NativeTabs.Trigger.Icon
-            sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
-            md="info"
-            />
-        </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
