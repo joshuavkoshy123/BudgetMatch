@@ -8,12 +8,19 @@ export default function TabLayout() {
         indicatorColor="rgba(255, 211, 61, 0.2)"
         rippleColor="rgba(255, 211, 61, 0.3)"
     >
-        <NativeTabs.Trigger name="savings">
-            <NativeTabs.Trigger.Label>Savings Planner</NativeTabs.Trigger.Label>
-            <NativeTabs.Trigger.Icon
-            sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
-            md="info"
-            />
+        <NativeTabs.Trigger name="savings-planner">
+          <NativeTabs.Trigger.Label>Savings Planner</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon
+          sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
+          md="info"
+          />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="budget-builder">
+          <NativeTabs.Trigger.Label>Budget Builder</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon
+          sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
+          md="info"
+          />
         </NativeTabs.Trigger>
     </NativeTabs>
   );

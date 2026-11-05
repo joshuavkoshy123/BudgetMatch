@@ -3,10 +3,8 @@ import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
-export default function SavingsPage() {
-
+export default function SavingsPlannerPage() {
   type Goal = {
-    id: string;
     name: string;
     amount: number;
     contribution: number;
@@ -71,7 +69,6 @@ export default function SavingsPage() {
     }
 
     const newGoal = {
-      id: Date.now().toString(),
       name: goal,
       amount: Number(amount),
       contribution: Number(contribution),
@@ -141,7 +138,7 @@ export default function SavingsPage() {
           
           {sortedGoals.map(goal => (
             <View 
-              key={goal.id}
+              key={goal.name}
               style={[
               styles.task,
               goal.priority === 'High'
