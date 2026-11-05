@@ -107,6 +107,12 @@ export default function SavingsPage() {
 
   const priorities = ['High', 'Medium', 'Low'];
 
+  // instantiate default goals
+  sortedGoals.push({id: '11111000', name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
+  sortedGoals.push({id: '11112000', name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
+  sortedGoals.push({id: '11113000', name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
+  sortedGoals.push({id: '11114000', name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
+
   for (const priority of priorities) {
     for (let i = goals.length - 1; i >= 0; i--) {
       if (goals[i].priority === priority) {
