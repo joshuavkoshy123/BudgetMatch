@@ -10,12 +10,15 @@ export default function BudgetBuilderPage() {
     spendingCategory: string;
     notificationThreshold: number;
   }
-  const [modalShown, setModalShown] = useState(false);
+  const [addModalShown, setAddModalShown] = useState(false);
+  const [linkModalShown, setLinkModalShown] = useState(false);
+  const [notificationModalShown, setNotificationModalShown] = useState(false);
 
   const [budgetingCategory, setBudgetingCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [spendingCategory, setSpendingCategory] = useState('');
   const [notificationThreshold, setNotificationThreshold] = useState('');
+  const [notification, setNotification] = useState('');
 
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
@@ -25,16 +28,101 @@ export default function BudgetBuilderPage() {
   // store budgets
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
+  const [isFormValid, setIsFormValid] = useState({
+    budgetingCategory: true,
+    amount: true,
+    spendingCategory: true,
+    notification: true,
+    notificationThreshold: true
+  });
+
+  const amountRegexPattern = /^\d*\.?\d{0,2}$/;
+  const notificationThresholdRegexPattern = /^\d*\.?\d*$/;
+
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {
     return <ActivityIndicator size="large" />;
   }
 
   // add budget to list of budgets
-  const addBudget = () => {}
+  const addBudget = () => {
+    // validate user input for form fields
+    let isCurrentFormValid = {
+      budgetingCategory: true,
+      amount: true,
+      spendingCategory: true,
+      notification: true,
+      notificationThreshold: true
+    };
+
+    if (budgetingCategory.length === 0) {
+      isCurrentFormValid.budgetingCategory = false;
+    }
+    if (spendingCategory.length === 0) {
+      isCurrentFormValid.spendingCategory = false;
+    }
+    if (amount.length === 0 || Number(amount) === 0) {
+      isCurrentFormValid.amount = false;
+    }
+    if (notificationThreshold.length === 0 || Number(notificationThreshold) <= 0 || Number(notificationThreshold) > 100) {
+      isCurrentFormValid.notificationThreshold = false;
+    }
+    if (notification.length === 0) {
+      isCurrentFormValid.notification = false;
+    }
+
+    setIsFormValid(isCurrentFormValid);
+    if (Object.values(isCurrentFormValid).some(valid => !valid)) {
+      return;
+    }
+
+    const newBudget = {
+      budgetingCategory: budgetingCategory,
+      amount: Number(amount),
+      spendingCategory: spendingCategory,
+      notificationThreshold: Number(notificationThreshold),
+      notification: notification
+    };
+
+    setBudgets(currentBudgets => [...currentBudgets, newBudget]);
+    setNotificationModalShown(false);
+
+    setBudgetingCategory('');
+    setSpendingCategory('');
+    setAmount('');
+    setNotificationThreshold('');
+    setNotification('');
+  }
 
   // edit budget
   const editBudget = () => {}
+
+  const openLinkBudgetModal = () => {
+    setAddModalShown(false);
+    setLinkModalShown(true);
+  }
+
+  const openNotificationModal = () => {
+    setLinkModalShown(false);
+    setNotificationModalShown(true);
+  }
+
+  const closeAddModal = () => {
+    setAddModalShown(false);
+    setBudgetingCategory('');
+    setAmount('');
+  }
+
+  const closeLinkModal = () => {
+    setLinkModalShown(false);
+    setSpendingCategory('');
+  }
+
+  const closeNotificationModal = () => {
+    setNotificationModalShown(false);
+    setNotification('');
+    setNotificationThreshold('');
+  }
 
   // sort budgets
   const sortedBudgets: Budget[] = [];
@@ -55,7 +143,7 @@ export default function BudgetBuilderPage() {
         <ScrollView style={styles.taskScrollPanel}>
           <Pressable 
             style={styles.addTask}
-            onPress={() => setModalShown(true)}
+            onPress={() => setAddModalShown(true)}
           >
             <Text style={styles.taskText}>+ Create a budget</Text>
           </Pressable>
@@ -76,6 +164,179 @@ export default function BudgetBuilderPage() {
           ))}
         </ScrollView>
       </View>
+
+      {/* Modal for adding budget */}
+      <Modal
+        visible={addModalShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setAddModalShown(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create a Goal</Text>
+
+              <Pressable
+                onPress={closeAddModal}
+                style={styles.closeButton}
+                hitSlop={10}
+              >
+                <Text style={styles.closeButtonText}>x</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalLabel}>Category</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Groceries"
+              value={budgetingCategory}
+              onChangeText={setBudgetingCategory}
+            />
+            {isFormValid.budgetingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+
+            <Text style={styles.modalLabel}>Amount ($)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 5000"
+              value={amount}
+              onChangeText={value => {
+                if (amountRegexPattern.test(value)) {
+                  setAmount(value);
+                }
+              }}
+              keyboardType="decimal-pad"
+            />
+            {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
+
+            <View style={styles.submitPanel}>
+              <Pressable 
+                style={styles.createGoalButton}
+                onPress={openLinkBudgetModal}
+              >
+                <Text style={styles.createGoalButtonText}>Next</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Link Spending Category Modal */}
+      <Modal
+        visible={linkModalShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLinkModalShown(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Link Spending Category</Text>
+
+              <Pressable
+                onPress={closeLinkModal}
+                style={styles.closeButton}
+                hitSlop={10}
+              >
+                <Text style={styles.closeButtonText}>x</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalLabel}>Category</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Groceries"
+              value={spendingCategory}
+              onChangeText={setSpendingCategory}
+            />
+            {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+
+            <View style={styles.submitPanel}>
+              <Pressable 
+                style={styles.createGoalButton}
+                onPress={openNotificationModal}
+              >
+                <Text style={styles.createGoalButtonText}>Next</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Set Notification Modal */}
+      <Modal
+        visible={notificationModalShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNotificationModalShown(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Set Notification</Text>
+
+              <Pressable
+                onPress={closeNotificationModal}
+                style={styles.closeButton}
+                hitSlop={10}
+              >
+                <Text style={styles.closeButtonText}>x</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalLabel}>Notification</Text>
+            <View style={styles.priorityPanel}>
+              <Pressable
+                onPress={() => setNotification('Yes')}
+                style={[
+                  styles.lowButton,
+                  notification === 'Yes' && styles.lowButtonFilled
+                ]}
+              >
+                <Text style={styles.modalLabel}>Yes</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setNotification('No')}
+                style={[
+                  styles.highButton,
+                  notification === 'No' && styles.highButtonFilled
+                ]}
+              >
+                <Text style={styles.modalLabel}>No</Text>
+              </Pressable>
+            </View>
+            {isFormValid.notification ? <></> : <Text style={styles.errorText}>Please select an option.</Text>}
+
+            {/* Only display threshold input field if user wants notifications */}
+            {notification &&
+              <View>
+              <Text style={styles.modalLabel}>Threshold (%)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 10"
+                value={notificationThreshold}
+                onChangeText={value => {
+                  if (notificationThresholdRegexPattern.test(value)) {
+                    setNotificationThreshold(value);
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {isFormValid.notificationThreshold ? <></> : <Text style={styles.errorText}>Please enter a valid threshold.</Text>}
+              </View> 
+            }
+
+            <View style={styles.submitPanel}>
+              <Pressable 
+                style={styles.createGoalButton}
+                onPress={addBudget}
+              >
+                <Text style={styles.createGoalButtonText}>Create</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
