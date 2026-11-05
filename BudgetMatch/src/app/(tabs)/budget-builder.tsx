@@ -132,6 +132,10 @@ export default function BudgetBuilderPage() {
   sortedBudgets.push({budgetingCategory: 'Transportation', amount: 100, spendingCategory: 'Transportation', notificationThreshold: 80});
   sortedBudgets.push({budgetingCategory: 'Fitness', amount: 50, spendingCategory: 'Fitness', notificationThreshold: 90});
 
+  for (let i = 0; i < budgets.length; i++){
+    sortedBudgets.push(budgets[i]);
+  }
+
   sortedBudgets.sort((budget1, budget2) => (budget2.amount - budget1.amount))
 
   return (
@@ -285,7 +289,7 @@ export default function BudgetBuilderPage() {
             </View>
 
             <Text style={styles.modalLabel}>Notification</Text>
-            <View style={styles.priorityPanel}>
+            <View style={styles.notificationPanel}>
               <Pressable
                 onPress={() => setNotification('Yes')}
                 style={[
@@ -308,7 +312,7 @@ export default function BudgetBuilderPage() {
             {isFormValid.notification ? <></> : <Text style={styles.errorText}>Please select an option.</Text>}
 
             {/* Only display threshold input field if user wants notifications */}
-            {notification &&
+            {notification === 'Yes' &&
               <View>
               <Text style={styles.modalLabel}>Threshold (%)</Text>
               <TextInput
@@ -530,10 +534,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
   },
-  priorityPanel: {
+  notificationPanel: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16
+    alignItems: 'center',
+    width: '100%'
   },
   submitPanel: {
     justifyContent: 'center',
