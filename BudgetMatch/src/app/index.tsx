@@ -22,7 +22,7 @@ export default function Index() {
 
   const login = () => {
     if (form.username === "TestUser" && form.password === "Budget123") {
-      router.replace("/(tabs)/savings");
+      router.replace("/(tabs)/savings-planner");
     }
     else {
       setIsLoginValid(false);
