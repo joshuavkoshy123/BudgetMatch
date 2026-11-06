@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
@@ -176,53 +176,55 @@ export default function BudgetBuilderPage() {
         animationType="fade"
         onRequestClose={() => setAddModalShown(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create a Goal</Text>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create a Goal</Text>
 
-              <Pressable
-                onPress={closeAddModal}
-                style={styles.closeButton}
-                hitSlop={10}
-              >
-                <Text style={styles.closeButtonText}>x</Text>
-              </Pressable>
+                <Pressable
+                  onPress={closeAddModal}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.modalLabel}>Category</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Groceries"
+                value={budgetingCategory}
+                onChangeText={setBudgetingCategory}
+              />
+              {isFormValid.budgetingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+
+              <Text style={styles.modalLabel}>Amount ($)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 5000"
+                value={amount}
+                onChangeText={value => {
+                  if (amountRegexPattern.test(value)) {
+                    setAmount(value);
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
+
+              <View style={styles.submitPanel}>
+                <Pressable 
+                  style={styles.createGoalButton}
+                  onPress={openLinkBudgetModal}
+                >
+                  <Text style={styles.createGoalButtonText}>Next</Text>
+                </Pressable>
+              </View>
             </View>
-
-            <Text style={styles.modalLabel}>Category</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Groceries"
-              value={budgetingCategory}
-              onChangeText={setBudgetingCategory}
-            />
-            {isFormValid.budgetingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
-
-            <Text style={styles.modalLabel}>Amount ($)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 5000"
-              value={amount}
-              onChangeText={value => {
-                if (amountRegexPattern.test(value)) {
-                  setAmount(value);
-                }
-              }}
-              keyboardType="decimal-pad"
-            />
-            {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
-
-            <View style={styles.submitPanel}>
-              <Pressable 
-                style={styles.createGoalButton}
-                onPress={openLinkBudgetModal}
-              >
-                <Text style={styles.createGoalButtonText}>Next</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Link Spending Category Modal */}
@@ -232,39 +234,41 @@ export default function BudgetBuilderPage() {
         animationType="fade"
         onRequestClose={() => setLinkModalShown(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Link Spending Category</Text>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Link Spending Category</Text>
 
-              <Pressable
-                onPress={closeLinkModal}
-                style={styles.closeButton}
-                hitSlop={10}
-              >
-                <Text style={styles.closeButtonText}>x</Text>
-              </Pressable>
+                <Pressable
+                  onPress={closeLinkModal}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.modalLabel}>Category</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Groceries"
+                value={spendingCategory}
+                onChangeText={setSpendingCategory}
+              />
+              {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+
+              <View style={styles.submitPanel}>
+                <Pressable 
+                  style={styles.createGoalButton}
+                  onPress={openNotificationModal}
+                >
+                  <Text style={styles.createGoalButtonText}>Next</Text>
+                </Pressable>
+              </View>
             </View>
-
-            <Text style={styles.modalLabel}>Category</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Groceries"
-              value={spendingCategory}
-              onChangeText={setSpendingCategory}
-            />
-            {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
-
-            <View style={styles.submitPanel}>
-              <Pressable 
-                style={styles.createGoalButton}
-                onPress={openNotificationModal}
-              >
-                <Text style={styles.createGoalButtonText}>Next</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Set Notification Modal */}
@@ -274,72 +278,74 @@ export default function BudgetBuilderPage() {
         animationType="fade"
         onRequestClose={() => setNotificationModalShown(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set Notification</Text>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Set Notification</Text>
 
-              <Pressable
-                onPress={closeNotificationModal}
-                style={styles.closeButton}
-                hitSlop={10}
-              >
-                <Text style={styles.closeButtonText}>x</Text>
-              </Pressable>
+                <Pressable
+                  onPress={closeNotificationModal}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.modalLabel}>Notification</Text>
+              <View style={styles.notificationPanel}>
+                <Pressable
+                  onPress={() => setNotification('Yes')}
+                  style={[
+                    styles.yesButton,
+                    notification === 'Yes' && styles.yesButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>Yes</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setNotification('No')}
+                  style={[
+                    styles.noButton,
+                    notification === 'No' && styles.noButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>No</Text>
+                </Pressable>
+              </View>
+              {isFormValid.notification ? <></> : <Text style={styles.errorText}>Please select an option.</Text>}
+
+              {/* Only display threshold input field if user wants notifications */}
+              {notification === 'Yes' &&
+                <View>
+                  <Text style={styles.modalLabel}>Threshold (%)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 10"
+                    value={notificationThreshold}
+                    onChangeText={value => {
+                      if (notificationThresholdRegexPattern.test(value)) {
+                        setNotificationThreshold(value);
+                      }
+                    }}
+                    keyboardType="decimal-pad"
+                  />
+                  {isFormValid.notificationThreshold ? <></> : <Text style={styles.errorText}>Please enter a valid threshold.</Text>}
+                </View>
+              }
+
+              <View style={styles.submitPanel}>
+                <Pressable 
+                  style={styles.createGoalButton}
+                  onPress={addBudget}
+                >
+                  <Text style={styles.createGoalButtonText}>Create</Text>
+                </Pressable>
+              </View>
             </View>
-
-            <Text style={styles.modalLabel}>Notification</Text>
-            <View style={styles.notificationPanel}>
-              <Pressable
-                onPress={() => setNotification('Yes')}
-                style={[
-                  styles.lowButton,
-                  notification === 'Yes' && styles.lowButtonFilled
-                ]}
-              >
-                <Text style={styles.modalLabel}>Yes</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setNotification('No')}
-                style={[
-                  styles.highButton,
-                  notification === 'No' && styles.highButtonFilled
-                ]}
-              >
-                <Text style={styles.modalLabel}>No</Text>
-              </Pressable>
-            </View>
-            {isFormValid.notification ? <></> : <Text style={styles.errorText}>Please select an option.</Text>}
-
-            {/* Only display threshold input field if user wants notifications */}
-            {notification === 'Yes' &&
-              <View>
-              <Text style={styles.modalLabel}>Threshold (%)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 10"
-                value={notificationThreshold}
-                onChangeText={value => {
-                  if (notificationThresholdRegexPattern.test(value)) {
-                    setNotificationThreshold(value);
-                  }
-                }}
-                keyboardType="decimal-pad"
-              />
-              {isFormValid.notificationThreshold ? <></> : <Text style={styles.errorText}>Please enter a valid threshold.</Text>}
-              </View> 
-            }
-
-            <View style={styles.submitPanel}>
-              <Pressable 
-                style={styles.createGoalButton}
-                onPress={addBudget}
-              >
-                <Text style={styles.createGoalButtonText}>Create</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -492,52 +498,39 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     color: '#25292e',
   },
-  highButton: {
+  noButton: {
     color: 'white',
     backgroundColor: '#FF7F7F',
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 48,
     borderRadius: 8,
   },
-  highButtonFilled: {
+  noButtonFilled: {
     color: 'white',
     backgroundColor: 'red',
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 48,
     borderRadius: 8,
   },
-  mediumButton: {
-    color: 'white',
-    backgroundColor: 'gold',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  mediumButtonFilled: {
-    color: 'white',
-    backgroundColor: 'yellow',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  lowButton: {
+  yesButton: {
     color: 'white',
     backgroundColor: 'lightgreen',
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 48,
     borderRadius: 8,
   },
-  lowButtonFilled: {
+  yesButtonFilled: {
     color: 'white',
     backgroundColor: 'green',
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 48,
     borderRadius: 8,
   },
   notificationPanel: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 48,
     width: '100%'
   },
   submitPanel: {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator, Keyboard, KeyboardAvoidingView } from "react-native";
 import { router } from 'expo-router';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
@@ -30,21 +30,23 @@ export default function Index() {
   }
 
   return (
-    <View style={styles.page}>
-      <Text style={styles.pageTitle}>Welcome to BudgetMatch!</Text>
-      <View style={styles.form}>
-        <Text style={styles.formLabel}>Username</Text>
-        <TextInput id="username" style={styles.formField}
-          onChangeText={value => setForm({...form, username: value})} />
-        <Text style={styles.formLabel}>Password</Text>
-        <TextInput id="password" style={styles.formField}
-          onChangeText={value => setForm({...form, password: value})} />
-        {isLoginValid ? <></> : <Text style={styles.errorText}>Invalid username or password. Please try again.</Text>}
-        <Pressable style={styles.formButton} onPress={login}>
-          <Text style={[styles.formLabel, styles.formButtonText]}>Log In</Text>
-        </Pressable>
-      </View>
-    </View>
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <Pressable style={styles.page} onPress={Keyboard.dismiss}>
+        <Text style={styles.pageTitle}>Welcome to BudgetMatch!</Text>
+        <View style={styles.form}>
+          <Text style={styles.formLabel}>Username</Text>
+          <TextInput id="username" style={styles.formField}
+            onChangeText={value => setForm({...form, username: value})} />
+          <Text style={styles.formLabel}>Password</Text>
+          <TextInput id="password" style={styles.formField}
+            onChangeText={value => setForm({...form, password: value})} />
+          {isLoginValid ? <></> : <Text style={styles.errorText}>Invalid username or password. Please try again.</Text>}
+          <Pressable style={styles.formButton} onPress={login}>
+            <Text style={[styles.formLabel, styles.formButtonText]}>Log In</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    </KeyboardAvoidingView>
   );
 }
 
