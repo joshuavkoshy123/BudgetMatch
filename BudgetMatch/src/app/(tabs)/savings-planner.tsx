@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
@@ -104,6 +104,12 @@ export default function SavingsPlannerPage() {
 
   const priorities = ['High', 'Medium', 'Low'];
 
+  // instantiate default goals
+  sortedGoals.push({name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
+  sortedGoals.push({name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
+  sortedGoals.push({name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
+  sortedGoals.push({name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
+
   for (const priority of priorities) {
     for (let i = goals.length - 1; i >= 0; i--) {
       if (goals[i].priority === priority) {
@@ -155,107 +161,110 @@ export default function SavingsPlannerPage() {
         </ScrollView>
       </View>
 
+      {/* Modal for adding savings goal */}
       <Modal
         visible={modalShown}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setModalShown(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create a Goal</Text>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create a Goal</Text>
 
-              <Pressable
-                onPress={closeModal}
-                style={styles.closeButton}
-                hitSlop={10}
-              >
-                <Text style={styles.closeButtonText}>x</Text>
-              </Pressable>
+                <Pressable
+                  onPress={closeModal}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+
+              <Text>Enter the details for your savings goal.</Text>
+
+              <Text style={styles.modalLabel}>Goal</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Emergency Fund"
+                value={goal}
+                onChangeText={setGoal}
+              />
+              {isFormValid.goal ? <></> : <Text style={styles.errorText}>Please enter a goal.</Text>}
+
+              <Text style={styles.modalLabel}>Amount ($)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 5000"
+                value={amount}
+                onChangeText={value => {
+                  if (amountRegexPattern.test(value)) {
+                    setAmount(value);
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
+
+              <Text style={styles.modalLabel}>Contribution (%)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 10"
+                value={contribution}
+                onChangeText={value => {
+                  if (contributionRegexPattern.test(value)) {
+                    setContribution(value);
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {isFormValid.contribution ? <></> : <Text style={styles.errorText}>Please enter a valid contribution.</Text>}
+
+              <Text style={styles.modalLabel}>Priority</Text>
+              <View style={styles.priorityPanel}>
+                <Pressable
+                  onPress={() => setPriority('High')}
+                  style={[
+                    styles.highButton,
+                    priority === 'High' && styles.highButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>High</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPriority('Medium')}
+                  style={[
+                    styles.mediumButton,
+                    priority === 'Medium' && styles.mediumButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>Medium</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPriority('Low')}
+                  style={[
+                    styles.lowButton,
+                    priority === 'Low' && styles.lowButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>Low</Text>
+                </Pressable>
+              </View>
+              {isFormValid.priority ? <></> : <Text style={styles.errorText}>Please select a priority.</Text>}
+
+              <View style={styles.submitPanel}>
+                <Pressable 
+                  style={styles.createGoalButton}
+                  onPress={addGoal}
+                >
+                  <Text style={styles.createGoalButtonText}>Create Goal</Text>
+                </Pressable>
+              </View>
             </View>
-
-            <Text>Enter the details for your savings goal.</Text>
-
-            <Text style={styles.modalLabel}>Goal</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Emergency Fund"
-              value={goal}
-              onChangeText={setGoal}
-            />
-            {isFormValid.goal ? <></> : <Text style={styles.errorText}>Please enter a goal.</Text>}
-
-            <Text style={styles.modalLabel}>Amount ($)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 5000"
-              value={amount}
-              onChangeText={value => {
-                if (amountRegexPattern.test(value)) {
-                  setAmount(value);
-                }
-              }}
-              keyboardType="decimal-pad"
-            />
-            {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
-
-            <Text style={styles.modalLabel}>Contribution (%)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 10"
-              value={contribution}
-              onChangeText={value => {
-                if (contributionRegexPattern.test(value)) {
-                  setContribution(value);
-                }
-              }}
-              keyboardType="decimal-pad"
-            />
-            {isFormValid.contribution ? <></> : <Text style={styles.errorText}>Please enter a valid contribution.</Text>}
-
-            <Text style={styles.modalLabel}>Priority</Text>
-            <View style={styles.priorityPanel}>
-              <Pressable
-                onPress={() => setPriority('High')}
-                style={[
-                  styles.highButton,
-                  priority === 'High' && styles.highButtonFilled
-                ]}
-              >
-                <Text style={styles.modalLabel}>High</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setPriority('Medium')}
-                style={[
-                  styles.mediumButton,
-                  priority === 'Medium' && styles.mediumButtonFilled
-                ]}
-              >
-                <Text style={styles.modalLabel}>Medium</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setPriority('Low')}
-                style={[
-                  styles.lowButton,
-                  priority === 'Low' && styles.lowButtonFilled
-                ]}
-              >
-                <Text style={styles.modalLabel}>Low</Text>
-              </Pressable>
-            </View>
-            {isFormValid.priority ? <></> : <Text style={styles.errorText}>Please select a priority.</Text>}
-
-            <View style={styles.submitPanel}>
-              <Pressable 
-                style={styles.createGoalButton}
-                onPress={addGoal}
-              >
-                <Text style={styles.createGoalButtonText}>Create Goal</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
