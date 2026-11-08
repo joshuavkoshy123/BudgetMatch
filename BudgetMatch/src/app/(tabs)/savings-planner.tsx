@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SavingsPlannerPage() {
   type Goal = {
@@ -201,6 +202,7 @@ export default function SavingsPlannerPage() {
           {sortedGoals.map(goal => (
             <View style={styles.fullTask}>
               <Pressable
+                style={styles.editButton}
                 onPress={() => {
                   setGoal(goal.name);
                   setAmount(goal.amount.toString());
@@ -209,7 +211,7 @@ export default function SavingsPlannerPage() {
                   setEditModalShown(true);
                 }}
               >
-                <Text>Edit</Text>
+                <Ionicons name="create-outline" color="black" size={20} />
               </Pressable>
               <View 
                 key={goal.name}
@@ -462,7 +464,7 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   taskPanel: {
-    width: '90%',
+    width: '95%',
     height: 470,
     padding: 15,
     backgroundColor: '#043574',
@@ -516,12 +518,23 @@ const styles = StyleSheet.create({
   fullTask: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
+    alignItems: 'center',
     gap: 10
+  },
+  editButton: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    borderColor: 'black',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   highPriorityTask: {
     marginTop: 15,
     height: 120,
-    width: 230,
+    width: 235,
     borderColor: 'red',
     borderWidth: 3,
     borderRadius: 10,
@@ -532,6 +545,7 @@ const styles = StyleSheet.create({
   mediumPriorityTask: {
     marginTop: 15,
     height: 120,
+    width: 235,
     borderColor: 'yellow',
     borderWidth: 3,
     borderRadius: 10,
@@ -542,6 +556,7 @@ const styles = StyleSheet.create({
   lowPriorityTask: {
     marginTop: 15,
     height: 120,
+    width: 235,
     borderColor: 'green',
     borderWidth: 3,
     borderRadius: 10,
@@ -554,7 +569,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 20,
     fontFamily: 'IBMPlexSans_400Regular',
-    paddingRight: 15,
   },
 
   // Modal styling
