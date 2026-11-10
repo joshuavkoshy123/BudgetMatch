@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SavingsPlannerPage() {
   type Goal = {
@@ -11,6 +12,7 @@ export default function SavingsPlannerPage() {
     priority: string;
   }
   const [modalShown, setModalShown] = useState(false);
+  const [editModalShown, setEditModalShown] = useState(false);
 
   const [goal, setGoal] = useState('');
   const [amount, setAmount] = useState('');
@@ -34,6 +36,18 @@ export default function SavingsPlannerPage() {
 
   const amountRegexPattern = /^\d*\.?\d{0,2}$/;
   const contributionRegexPattern = /^\d*\.?\d*$/;
+
+  // only do this on first render
+  useEffect(() => {
+    // instantiate default goals
+    const defaultGoals: Goal[] = goals;
+    defaultGoals.push({name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
+    defaultGoals.push({name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
+    defaultGoals.push({name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
+    defaultGoals.push({name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
+
+    setGoals(defaultGoals);
+  }, []);
 
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {
@@ -84,9 +98,64 @@ export default function SavingsPlannerPage() {
     setPriority('');
   };
 
+  // edit existing goal
+  const editGoal = () => {
+    // validate user input for form fields
+    let isCurrentFormValid = {
+      goal: true,
+      amount: true,
+      contribution: true,
+      priority: true
+    };
+
+    if (goal.length === 0) {
+      isCurrentFormValid.goal = false;
+    }
+    if (amount.length === 0 || Number(amount) === 0) {
+      isCurrentFormValid.amount = false;
+    }
+    if (contribution.length === 0 || Number(contribution) <= 0 || Number(contribution) > 100) {
+      isCurrentFormValid.contribution = false;
+    }
+    if (priority.length === 0) {
+      isCurrentFormValid.priority = false;
+    }
+
+    setIsFormValid(isCurrentFormValid);
+    if (Object.values(isCurrentFormValid).some(valid => !valid)) {
+      return;
+    }
+
+    const updatedGoals = goals.map(oldGoal => {
+      if (oldGoal.name === goal) {
+        return {
+          name: goal,
+          amount: Number(amount),
+          contribution: Number(contribution),
+          priority: priority
+        }
+      }
+      else {
+        return oldGoal;
+      }
+    });
+
+    console.log("Goals: ");
+    console.log(updatedGoals);
+
+    setGoals(updatedGoals);
+    setEditModalShown(false);
+
+    setGoal('');
+    setAmount('');
+    setContribution('');
+    setPriority('');
+  }
+
   const closeModal = () => {
     // close modals and reset variables
     setModalShown(false);
+    setEditModalShown(false);
     setGoal('');
     setAmount('');
     setContribution('');
@@ -103,12 +172,6 @@ export default function SavingsPlannerPage() {
   const sortedGoals: Goal[] = [];
 
   const priorities = ['High', 'Medium', 'Low'];
-
-  // instantiate default goals
-  sortedGoals.push({name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
-  sortedGoals.push({name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
-  sortedGoals.push({name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
-  sortedGoals.push({name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
 
   for (const priority of priorities) {
     for (let i = goals.length - 1; i >= 0; i--) {
@@ -137,24 +200,38 @@ export default function SavingsPlannerPage() {
           </Pressable>
           
           {sortedGoals.map(goal => (
-            <View 
-              key={goal.name}
-              style={[
-              styles.task,
-              goal.priority === 'High'
-                ? styles.highPriorityTask
-                : goal.priority === 'Medium'
-                  ? styles.mediumPriorityTask
-                  : styles.lowPriorityTask,
-            ]}>
-              <CircularProgress
-                value={50}
-                valueSuffix='%'
-                radius={30}/>
-              <View>
-                <Text style={styles.taskText}>{goal.name}</Text>
-                <Text>Target: ${goal.amount.toLocaleString()}</Text>
-                <Text>Contribution: {goal.contribution}%</Text>
+            <View style={styles.fullTask}>
+              <Pressable
+                style={styles.editButton}
+                onPress={() => {
+                  setGoal(goal.name);
+                  setAmount(goal.amount.toString());
+                  setContribution(goal.contribution.toString());
+                  setPriority(goal.priority);
+                  setEditModalShown(true);
+                }}
+              >
+                <Ionicons name="create-outline" color="black" size={20} />
+              </Pressable>
+              <View 
+                key={goal.name}
+                style={[
+                styles.task,
+                goal.priority === 'High'
+                  ? styles.highPriorityTask
+                  : goal.priority === 'Medium'
+                    ? styles.mediumPriorityTask
+                    : styles.lowPriorityTask,
+              ]}>
+                <CircularProgress
+                  value={50}
+                  valueSuffix='%'
+                  radius={30}/>
+                <View>
+                  <Text style={styles.taskText}>{goal.name}</Text>
+                  <Text>Target: ${goal.amount.toLocaleString()}</Text>
+                  <Text>Contribution: {goal.contribution}%</Text>
+                </View>
               </View>
             </View>
           ))}
@@ -266,6 +343,109 @@ export default function SavingsPlannerPage() {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Modal for editing a savings goal */}
+      <Modal
+        visible={editModalShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setEditModalShown(false)}
+      >
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Goal</Text>
+
+                <Pressable
+                  onPress={closeModal}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+
+              <Text>Enter the details for your savings goal.</Text>
+
+              <Text style={styles.modalLabel}>Goal</Text>
+              <TextInput
+                style={styles.input}
+                value={goal}
+                editable={false}
+              />
+              {isFormValid.goal ? <></> : <Text style={styles.errorText}>Please enter a goal.</Text>}
+
+              <Text style={styles.modalLabel}>Amount ($)</Text>
+              <TextInput
+                style={styles.input}
+                value={amount}
+                onChangeText={value => {
+                  if (amountRegexPattern.test(value)) {
+                    setAmount(value);
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
+
+              <Text style={styles.modalLabel}>Contribution (%)</Text>
+              <TextInput
+                style={styles.input}
+                value={contribution}
+                onChangeText={value => {
+                  if (contributionRegexPattern.test(value)) {
+                    setContribution(value);
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {isFormValid.contribution ? <></> : <Text style={styles.errorText}>Please enter a valid contribution.</Text>}
+
+              <Text style={styles.modalLabel}>Priority</Text>
+              <View style={styles.priorityPanel}>
+                <Pressable
+                  onPress={() => setPriority('High')}
+                  style={[
+                    styles.highButton,
+                    priority === 'High' && styles.highButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>High</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPriority('Medium')}
+                  style={[
+                    styles.mediumButton,
+                    priority === 'Medium' && styles.mediumButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>Medium</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPriority('Low')}
+                  style={[
+                    styles.lowButton,
+                    priority === 'Low' && styles.lowButtonFilled
+                  ]}
+                >
+                  <Text style={styles.modalLabel}>Low</Text>
+                </Pressable>
+              </View>
+              {isFormValid.priority ? <></> : <Text style={styles.errorText}>Please select a priority.</Text>}
+
+              <View style={styles.submitPanel}>
+                <Pressable 
+                  style={styles.createGoalButton}
+                  onPress={editGoal}
+                >
+                  <Text style={styles.createGoalButtonText}>Create Goal</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -284,7 +464,7 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   taskPanel: {
-    width: '80%',
+    width: '95%',
     height: 470,
     padding: 15,
     backgroundColor: '#043574',
@@ -333,11 +513,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    gap: 30
+    gap: 10
+  },
+  fullTask: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: 10
+  },
+  editButton: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    borderColor: 'black',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   highPriorityTask: {
     marginTop: 15,
     height: 120,
+    width: 235,
     borderColor: 'red',
     borderWidth: 3,
     borderRadius: 10,
@@ -348,6 +545,7 @@ const styles = StyleSheet.create({
   mediumPriorityTask: {
     marginTop: 15,
     height: 120,
+    width: 235,
     borderColor: 'yellow',
     borderWidth: 3,
     borderRadius: 10,
@@ -358,6 +556,7 @@ const styles = StyleSheet.create({
   lowPriorityTask: {
     marginTop: 15,
     height: 120,
+    width: 235,
     borderColor: 'green',
     borderWidth: 3,
     borderRadius: 10,
@@ -369,7 +568,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
     fontSize: 20,
-    fontFamily: 'IBMPlexSans_400Regular'
+    fontFamily: 'IBMPlexSans_400Regular',
   },
 
   // Modal styling
