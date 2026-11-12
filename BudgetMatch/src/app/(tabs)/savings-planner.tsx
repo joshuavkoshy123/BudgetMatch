@@ -152,7 +152,7 @@ export default function SavingsPlannerPage() {
     setPriority('');
   }
 
-  const closeModal = () => {
+  const closeAllModals = () => {
     // close modals and reset variables
     setModalShown(false);
     setEditModalShown(false);
@@ -196,11 +196,11 @@ export default function SavingsPlannerPage() {
             style={styles.addTask}
             onPress={() => setModalShown(true)}
           >
-            <Text style={styles.taskText}>+ Create a goal</Text>
+            <Text style={styles.taskText}>+ Create a Goal</Text>
           </Pressable>
           
           {sortedGoals.map(goal => (
-            <View style={styles.fullTask}>
+            <View key={goal.name} style={styles.fullTask}>
               <Pressable
                 style={styles.editButton}
                 onPress={() => {
@@ -214,7 +214,6 @@ export default function SavingsPlannerPage() {
                 <Ionicons name="create-outline" color="black" size={20} />
               </Pressable>
               <View 
-                key={goal.name}
                 style={[
                 styles.task,
                 goal.priority === 'High'
@@ -252,7 +251,7 @@ export default function SavingsPlannerPage() {
                 <Text style={styles.modalTitle}>Create a Goal</Text>
 
                 <Pressable
-                  onPress={closeModal}
+                  onPress={closeAllModals}
                   style={styles.closeButton}
                   hitSlop={10}
                 >
@@ -358,7 +357,7 @@ export default function SavingsPlannerPage() {
                 <Text style={styles.modalTitle}>Edit Goal</Text>
 
                 <Pressable
-                  onPress={closeModal}
+                  onPress={closeAllModals}
                   style={styles.closeButton}
                   hitSlop={10}
                 >
@@ -439,7 +438,7 @@ export default function SavingsPlannerPage() {
                   style={styles.createGoalButton}
                   onPress={editGoal}
                 >
-                  <Text style={styles.createGoalButtonText}>Create Goal</Text>
+                  <Text style={styles.createGoalButtonText}>Save</Text>
                 </Pressable>
               </View>
             </View>
@@ -505,6 +504,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   task: {
+    flex: 1,
     marginTop: 15,
     height: 120,
     borderColor: 'black',
@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
   },
   fullTask: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
     gap: 10
   },
@@ -534,7 +533,6 @@ const styles = StyleSheet.create({
   highPriorityTask: {
     marginTop: 15,
     height: 120,
-    width: 235,
     borderColor: 'red',
     borderWidth: 3,
     borderRadius: 10,
@@ -545,7 +543,6 @@ const styles = StyleSheet.create({
   mediumPriorityTask: {
     marginTop: 15,
     height: 120,
-    width: 235,
     borderColor: 'yellow',
     borderWidth: 3,
     borderRadius: 10,
@@ -556,7 +553,6 @@ const styles = StyleSheet.create({
   lowPriorityTask: {
     marginTop: 15,
     height: 120,
-    width: 235,
     borderColor: 'green',
     borderWidth: 3,
     borderRadius: 10,
