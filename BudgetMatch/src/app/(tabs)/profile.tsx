@@ -1,15 +1,12 @@
 import { useState } from "react";
-import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator, Image } from "react-native";
 import { router } from 'expo-router';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import React from 'react';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function Index() {
-  const [form, setForm] = useState({
-    username: "",
-    password: ""
-  });
 
-  const [isLoginValid, setIsLoginValid] = useState(true);
 
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
@@ -20,30 +17,23 @@ export default function Index() {
     return <ActivityIndicator size="large" />;
   }
 
-  const login = () => {
-    if (form.username === "TestUser" && form.password === "Budget123") {
-      router.replace("/(tabs)/savings");
-    }
-    else {
-      setIsLoginValid(false);
-    }
+  const logout = () => {
+      router.replace("/");
   }
 
   return (
     <View style={styles.page}>
-      <Text style={styles.pageTitle}>Welcome to BudgetMatch!</Text>
+      <Text style={styles.pageTitle}>Profile</Text>
+      <Image source={require('../../../assets/images/profile-icon3.png')} style={styles.image} resizeMode="contain" />
       <View style={styles.form}>
-        <Text style={styles.formLabel}>Username</Text>
-        <TextInput id="username" style={styles.formField}
-          onChangeText={value => setForm({...form, username: value})} />
-        <Text style={styles.formLabel}>Password</Text>
-        <TextInput id="password" style={styles.formField}
-          onChangeText={value => setForm({...form, password: value})} />
-        {isLoginValid ? <></> : <Text style={styles.errorText}>Invalid username or password. Please try again.</Text>}
-        <Pressable style={styles.formButton} onPress={login}>
-          <Text style={[styles.formLabel, styles.formButtonText]}>Log In</Text>
-        </Pressable>
-      </View>
+              <Text style={styles.formLabel}>Username</Text>
+              <TextInput style={styles.formField} editable={false} value={"TestUser"}/>
+              <Text style={styles.formLabel}>Email</Text>
+              <TextInput style={styles.formField} editable={false} value={"budgetmatchtestuser@gmail.com"}/>
+              <Pressable style={styles.formButton} onPress={logout}>
+                <Text style={[styles.formLabel, styles.formButtonText]}>Log Out</Text>
+              </Pressable>
+            </View>
     </View>
   );
 }
@@ -60,7 +50,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 30,
     fontWeight: 'bold',
-    fontFamily: 'IBMPlexSans_700Bold'
+    fontFamily: 'IBMPlexSans_700Bold',
+    marginBottom: 30
+  },
+  image: {
+    width: "30%",
+    height: "30%",
+    marginBottom: 30
   },
   form: {
     width: "80%",
