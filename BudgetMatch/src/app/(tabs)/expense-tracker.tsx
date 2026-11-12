@@ -3,11 +3,19 @@ import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable
 import Svg, { Path } from 'react-native-svg';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
+// Adds Month Name
+const addMonth = (amount: number) => {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1)
+    .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+}
+
 export default function ExpenseTrackerPage() {
   type Expense = {
     description: string;
     amount: number;
     category: string;
+    month: string;
   }
   type CategoryTotal = {
     category: string;
@@ -30,7 +38,15 @@ export default function ExpenseTrackerPage() {
   });
 
   // store expenses
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+
+  // Next 5 Months
+  const monthOptions = [0, 1, 2, 3, 4, 5].map(addMonth);
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
+  const [monthMenuOpen, setMonthMenuOpen] = useState(false);
+
+  // Only show expenses from month
+  const expenses = allExpenses.filter(expense => expense.month === selectedMonth);
 
   const [isFormValid, setIsFormValid] = useState({
     amount: true,
@@ -101,10 +117,11 @@ export default function ExpenseTrackerPage() {
     const newExpense = {
       description: finalDescription,
       amount: Number(amount),
-      category: finalCategory
+      category: finalCategory,
+      month: selectedMonth
     };
 
-    setExpenses(currentExpenses => [...currentExpenses, newExpense]);
+    setAllExpenses(currentExpenses => [...currentExpenses, newExpense]);
     setAddModalShown(false);
 
     setDescription('');
@@ -184,6 +201,25 @@ export default function ExpenseTrackerPage() {
     <View style={styles.container}>
       <View style={styles.headingPanel}>
         <Text style={styles.headingText}>Expense Tracker</Text>
+      </View>
+
+      {/* dropdown */}
+      <View style={styles.monthDropdown}>
+        <Pressable style={styles.monthButton} onPress={() => setMonthMenuOpen(!monthMenuOpen)}>
+          <Text style={styles.monthText}>{selectedMonth} ▼</Text>
+        </Pressable>
+        {monthMenuOpen && monthOptions.map(month => (
+          <Pressable
+            key={month}
+            style={styles.monthOption}
+            onPress={() => {
+              setSelectedMonth(month);
+              setMonthMenuOpen(false);
+            }}
+          >
+            <Text>{month}</Text>
+          </Pressable>
+        ))}
       </View>
 
       <ScrollView
@@ -405,6 +441,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 30,
     fontFamily: 'IBMPlexSans_700Bold',
+  },
+  monthDropdown: {
+    width: '90%',
+    marginBottom: 16,
+  },
+  monthButton: {
+    backgroundColor: '#043574',
+    borderRadius: 12,
+    padding: 12,
+  },
+  monthText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'IBMPlexSans_700Bold',
+  },
+  monthOption: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
   },
   content: {
     width: '100%',
