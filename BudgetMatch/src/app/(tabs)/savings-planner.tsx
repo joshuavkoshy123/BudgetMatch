@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ export default function SavingsPlannerPage() {
   }
   const [modalShown, setModalShown] = useState(false);
   const [editModalShown, setEditModalShown] = useState(false);
+  const [viewModalShown, setViewModalShown] = useState(false);
 
   const [goal, setGoal] = useState('');
   const [amount, setAmount] = useState('');
@@ -140,9 +141,6 @@ export default function SavingsPlannerPage() {
       }
     });
 
-    console.log("Goals: ");
-    console.log(updatedGoals);
-
     setGoals(updatedGoals);
     setEditModalShown(false);
 
@@ -150,12 +148,13 @@ export default function SavingsPlannerPage() {
     setAmount('');
     setContribution('');
     setPriority('');
-  }
+  };
 
   const closeAllModals = () => {
     // close modals and reset variables
     setModalShown(false);
     setEditModalShown(false);
+    setViewModalShown(false);
     setGoal('');
     setAmount('');
     setContribution('');
@@ -166,6 +165,18 @@ export default function SavingsPlannerPage() {
       contribution: true,
       priority: true
     });
+  };
+
+  const deleteGoal = () => {
+    const updatedGoals = goals.filter(g => g.name !== goal);
+    
+    setGoals(updatedGoals);
+    setViewModalShown(false);
+
+    setGoal('');
+    setAmount('');
+    setContribution('');
+    setPriority('');
   }
 
   // sort goals
@@ -201,6 +212,7 @@ export default function SavingsPlannerPage() {
           
           {sortedGoals.map(goal => (
             <View key={goal.name} style={styles.fullTask}>
+              {/* Edit Button */}
               <Pressable
                 style={styles.editButton}
                 onPress={() => {
@@ -213,7 +225,7 @@ export default function SavingsPlannerPage() {
               >
                 <Ionicons name="create-outline" color="black" size={20} />
               </Pressable>
-              <View 
+              <Pressable 
                 style={[
                 styles.task,
                 goal.priority === 'High'
@@ -221,7 +233,15 @@ export default function SavingsPlannerPage() {
                   : goal.priority === 'Medium'
                     ? styles.mediumPriorityTask
                     : styles.lowPriorityTask,
-              ]}>
+                ]}
+                onPress={() => {
+                  setGoal(goal.name);
+                  setAmount(goal.amount.toString());
+                  setContribution(goal.contribution.toString());
+                  setPriority(goal.priority);
+                  setViewModalShown(true);
+                }}
+              >
                 <CircularProgress
                   value={50}
                   valueSuffix='%'
@@ -231,7 +251,7 @@ export default function SavingsPlannerPage() {
                   <Text>Target: ${goal.amount.toLocaleString()}</Text>
                   <Text>Contribution: {goal.contribution}%</Text>
                 </View>
-              </View>
+              </Pressable>
             </View>
           ))}
         </ScrollView>
@@ -445,6 +465,103 @@ export default function SavingsPlannerPage() {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* View Savings Goal Modal */}
+      <Modal
+        visible={viewModalShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewModalShown(false)}
+      >
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>View Savings Goal</Text>
+
+                <Pressable
+                  onPress={closeAllModals}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.modalLabel}>Goal</Text>
+              <TextInput
+                style={styles.input}
+                value={goal}
+                editable={false}
+              />
+
+              <Text style={styles.modalLabel}>Amount ($)</Text>
+              <TextInput
+                style={styles.input}
+                value={amount}
+                editable={false}
+              />
+
+              <Text style={styles.modalLabel}>Contribution (%)</Text>
+              <TextInput
+                style={styles.input}
+                value={contribution}
+                editable={false}
+              />
+
+              <Text style={styles.modalLabel}>Priority</Text>
+              <View style={styles.priorityPanel}>
+                <Pressable
+                  style={[
+                    styles.highButton,
+                    priority === 'High' && styles.highButtonFilled
+                  ]}
+                  disabled={true}
+                >
+                  <Text style={styles.modalLabel}>High</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.mediumButton,
+                    priority === 'Medium' && styles.mediumButtonFilled
+                  ]}
+                  disabled={true}
+                >
+                  <Text style={styles.modalLabel}>Medium</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.lowButton,
+                    priority === 'Low' && styles.lowButtonFilled
+                  ]}
+                  disabled={true}
+                >
+                  <Text style={styles.modalLabel}>Low</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.submitPanel}>
+                <Pressable 
+                  style={styles.deleteGoalButton}
+                  onPress={() => {
+                    Alert.alert('Delete Budget', 'Are you sure you want to delete this budget?', [
+                      {
+                        text: 'Yes',
+                        onPress: deleteGoal
+                      },
+                      {
+                        text: 'No'
+                      }
+                    ]);
+                  }}
+                >
+                  <Text style={styles.createGoalButtonText}>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -524,6 +641,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingVertical: 10,
     paddingHorizontal: 10,
+    marginTop: 15,
     borderRadius: 30,
     borderColor: 'black',
     flexDirection: 'row',
@@ -597,6 +715,12 @@ const styles = StyleSheet.create({
   createGoalButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  deleteGoalButton: {
+    backgroundColor: 'red',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
   modalLabel: {
     fontSize: 16
