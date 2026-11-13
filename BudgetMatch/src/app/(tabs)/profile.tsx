@@ -24,10 +24,14 @@ export default function Index() {
   return (
     <View style={styles.page}>
       <Text style={styles.pageTitle}>Profile</Text>
-      <Image source={require('../../../assets/images/profile-icon3.png')} style={styles.image} resizeMode="contain" />
+      {/* <Image source={require('../../../assets/images/profile-icon3.png')} style={styles.image} resizeMode="contain" /> */}
       <View style={styles.form}>
               <Text style={styles.formLabel}>Username</Text>
               <TextInput style={styles.formField} editable={false} value={"TestUser"}/>
+              <Text style={styles.formLabel}>First Name</Text>
+              <TextInput style={styles.formField} editable={false} value={"Test"}/>
+              <Text style={styles.formLabel}>Last Name</Text>
+              <TextInput style={styles.formField} editable={false} value={"User"}/>
               <Text style={styles.formLabel}>Email</Text>
               <TextInput style={styles.formField} editable={false} value={"budgetmatchtestuser@gmail.com"}/>
               <Pressable style={styles.formButton} onPress={logout}>
@@ -56,7 +60,7 @@ const styles = StyleSheet.create({
   image: {
     width: "30%",
     height: "30%",
-    marginBottom: 30
+    marginBottom: 0
   },
   form: {
     width: "80%",
