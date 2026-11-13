@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Polyline, Circle, Line, G, Text as SvgText } from 'react-native-svg';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
 // Adds Month Name
@@ -24,6 +24,10 @@ export default function ExpenseTrackerPage() {
   type PieSlice = {
     category: string;
     path: string;
+  }
+  type ChartLine = {
+    category: string;
+    points: string;
   }
   const [addModalShown, setAddModalShown] = useState(false);
 
@@ -190,6 +194,53 @@ export default function ExpenseTrackerPage() {
     startAngle = endAngle;
   }
 
+  // find every category that has expense
+  const chartCategories: string[] = [];
+
+  for (let i = 0; i < allExpenses.length; i++){
+    if (!chartCategories.includes(allExpenses[i].category)) {
+      chartCategories.push(allExpenses[i].category);
+    }
+  }
+
+  // total spent per category
+  const monthTotals: number[][] = [];
+  let highestTotal = 1;
+
+  for (let i = 0; i < chartCategories.length; i++){
+    const totals: number[] = [];
+
+    for (let j = 0; j < monthOptions.length; j++){
+      let total = 0;
+      for (let k = 0; k < allExpenses.length; k++){
+        if (allExpenses[k].category === chartCategories[i] && allExpenses[k].month === monthOptions[j]) {
+          total += allExpenses[k].amount;
+        }
+      }
+
+      totals.push(total);
+      if (total > highestTotal) {
+        highestTotal = total;
+      }
+    }
+    monthTotals.push(totals);
+  }
+
+  // position month amount on the line chart
+  const getChartX = (monthIndex: number) => 40 + monthIndex * 50;
+  const getChartY = (value: number) => 165 - (value / highestTotal) * 150;
+
+  // build line chart lines
+  const chartLines: ChartLine[] = [];
+
+  for (let i = 0; i < chartCategories.length; i++){
+    let points = '';
+    for (let j = 0; j < monthOptions.length; j++){
+      points += `${getChartX(j)},${getChartY(monthTotals[i][j])} `;
+    }
+    chartLines.push({category: chartCategories[i], points: points});
+  }
+
   // sort expenses so the newest is shown first
   const recentExpenses: Expense[] = [];
 
@@ -287,6 +338,40 @@ export default function ExpenseTrackerPage() {
                 ))}
               </View>
             </>
+          )}
+        </View>
+
+        <View style={styles.lineChartPanel}>
+          <Text style={styles.lineChartTitle}>Spending by Month</Text>
+
+          {allExpenses.length === 0 ? (
+            <Text style={styles.emptyListText}>Add expenses to see your spending over time.</Text>
+          ) : (
+            <Svg width="100%" height={200} viewBox="0 0 300 200">
+              {[0, 0.5, 1].map(fraction => (
+                <G key={fraction}>
+                  <Line x1={35} x2={295} y1={getChartY(highestTotal * fraction)} y2={getChartY(highestTotal * fraction)} stroke="#DDDDDD" />
+                  <SvgText x={30} y={getChartY(highestTotal * fraction) + 4} fontSize={10} fill="#666666" textAnchor="end">
+                    {'$' + Math.round(highestTotal * fraction)}
+                  </SvgText>
+                </G>
+              ))}
+
+              {monthOptions.map((month, index) => (
+                <SvgText key={month} x={getChartX(index)} y={188} fontSize={10} fill="#666666" textAnchor="middle">
+                  {month.slice(0, 3)}
+                </SvgText>
+              ))}
+
+              {chartLines.map((line, i) => (
+                <G key={line.category}>
+                  <Polyline points={line.points} fill="none" stroke={getCategoryColor(line.category)} strokeWidth={2} />
+                  {monthOptions.map((month, j) => (
+                    <Circle key={month} cx={getChartX(j)} cy={getChartY(monthTotals[i][j])} r={3.5} fill={getCategoryColor(line.category)} />
+                  ))}
+                </G>
+              ))}
+            </Svg>
           )}
         </View>
 
@@ -594,6 +679,18 @@ const styles = StyleSheet.create({
   categoryPercentage: {
     color: '#D9E7F8',
     fontSize: 12,
+  },
+  lineChartPanel: {
+    width: '90%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 18,
+  },
+  lineChartTitle: {
+    color: '#25292e',
+    fontSize: 20,
+    fontFamily: 'IBMPlexSans_700Bold',
+    marginBottom: 8,
   },
   expensesPanel: {
     width: '90%',
