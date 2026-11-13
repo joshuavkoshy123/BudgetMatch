@@ -3,6 +3,7 @@ import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator, Image 
 import { router } from 'expo-router';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Index() {
 
@@ -23,7 +24,7 @@ export default function Index() {
   return (
     <View style={styles.page}>
       <Text style={styles.pageTitle}>Profile</Text>
-      <Image source={require('../../../assets/images/profile-icon3.png')} style={styles.image} resizeMode="contain" />
+      <Ionicons name="person-circle-outline" color="black" size={200} />
       <View style={styles.form}>
               <Text style={styles.formLabel}>Username</Text>
               <TextInput style={styles.formField} editable={false} value={"TestUser"}/>
