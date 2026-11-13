@@ -601,13 +601,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#25292e',
   },
   taskScrollPanel: {
-    height: 450,
+    height: 430,
     backgroundColor: '#043574',
     borderRadius: 10
   },
   taskPanel: {
     width: '95%',
-    height: 470,
+    height: 450,
     padding: 15,
     backgroundColor: '#043574',
     borderRadius: 10,
@@ -615,8 +615,7 @@ const styles = StyleSheet.create({
     marginRight: 30
   },
   headingPanel: {
-    padding: 20,
-    maxHeight: 200,
+    paddingBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
