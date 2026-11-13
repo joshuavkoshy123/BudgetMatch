@@ -3,7 +3,6 @@ import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator, Image 
 import { router } from 'expo-router';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import React from 'react';
-import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function Index() {
 

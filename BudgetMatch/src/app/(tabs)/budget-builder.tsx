@@ -12,11 +12,16 @@ export default function BudgetBuilderPage() {
     notification: string;
     notificationThreshold?: number;
   }
+  type Notification = {
+    message: string;
+    timestamp: string;
+  }
   const [addModalShown, setAddModalShown] = useState(false);
   const [linkModalShown, setLinkModalShown] = useState(false);
   const [notificationModalShown, setNotificationModalShown] = useState(false);
   const [viewModalShown, setViewModalShown] = useState(false);
   const [editModalShown, setEditModalShown] = useState(false);
+  const [notificationWidgetShown, setNotificationWidgetShown] = useState(false);
 
   const [budgetingCategory, setBudgetingCategory] = useState('');
   const [oldBudgetingCategory, setOldBudgetingCategory] = useState('');
@@ -30,8 +35,9 @@ export default function BudgetBuilderPage() {
     IBMPlexSans_700Bold,
   });
 
-  // store budgets
+  // store budgets and notifications 
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [isFormValid, setIsFormValid] = useState({
     budgetingCategory: true,
@@ -54,6 +60,14 @@ export default function BudgetBuilderPage() {
     defaultBudgets.push({budgetingCategory: 'Fitness', amount: 50, spendingCategory: 'Fitness', notification: 'Yes', notificationThreshold: 90});
 
     setBudgets(defaultBudgets);
+
+    // instantiate default notifications
+    const defaultNotifications: Notification[] = notifications;
+    defaultNotifications.push({message: 'You have reached 80% of your Entertainment budget.', timestamp: '11/12/2026 10:00am'});
+    defaultNotifications.push({message: 'You have reached 95% of your Groceries budget.', timestamp: '11/11/2026 12:30pm'});
+    defaultNotifications.push({message: 'You have reached 90% of your Fitness budget.', timestamp: '10/14/2026 3:45pm'});
+
+    setNotifications(defaultNotifications);
   }, []);
 
   // Wait until fonts are fully loaded before rendering
@@ -217,6 +231,7 @@ export default function BudgetBuilderPage() {
     closeNotificationModal();
     setViewModalShown(false);
     setEditModalShown(false);
+    setNotificationWidgetShown(false);
     setIsFormValid({
       budgetingCategory: true,
       amount: true,
@@ -236,6 +251,9 @@ export default function BudgetBuilderPage() {
 
   return (
     <View style={styles.container}>
+      <Pressable style={styles.notificationButton} onPress={() => setNotificationWidgetShown(true)}>
+        <Ionicons name="notifications-outline" color="black" size={20} />
+      </Pressable>
       <View style={styles.headingPanel}>
         <Text style={styles.headingText}>Budget Builder</Text>
       </View>
@@ -680,9 +698,46 @@ export default function BudgetBuilderPage() {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Notifications Widget */}
+      <Modal
+        visible={notificationWidgetShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNotificationWidgetShown(false)}
+      >
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Notifications</Text>
+
+                <Pressable
+                  onPress={closeAllModals}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+              <View style={styles.notificationWidgetPanel}>
+                <ScrollView style={styles.notificationScrollPanel}>
+                {notifications.map(notification => (
+                  <View key={`${notification.message} ${notification.timestamp}`} style={styles.notification}>
+                      <Text style={styles.notificationText}>{notification.message}</Text>
+                      <Text>{notification.timestamp}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+              </View>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -697,6 +752,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#043574',
     borderRadius: 10
   },
+  notificationScrollPanel: {
+    height: 450,
+    backgroundColor: '#043574',
+    borderRadius: 10
+  },
   taskPanel: {
     flexDirection: 'column',
     gap: 20,
@@ -707,6 +767,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 30,
     marginRight: 30
+  },
+  notificationWidgetPanel: {
+    flexDirection: 'column',
+    gap: 20,
+    width: '100%',
+    height: 470,
+    padding: 15,
+    backgroundColor: '#043574',
+    borderRadius: 10,
   },
   headingPanel: {
     padding: 20,
@@ -754,6 +823,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 30
   },
+  notification: {
+    flex: 1,
+    height: '100%',
+    borderColor: 'black',
+    borderWidth: 3,
+    borderRadius: 10,
+    backgroundColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    gap: 15,
+    marginBottom: 10
+  },
   fullAddTask: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -775,6 +858,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
+  notificationButton: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    borderColor: 'black',
+    position: 'absolute',
+    top: 20,
+    left: 20
+  },
   editButton: {
     backgroundColor: 'white',
     paddingVertical: 10,
@@ -786,6 +879,12 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   taskText: {
+    color: 'black',
+    fontWeight: 'bold',
+    fontSize: 20,
+    fontFamily: 'IBMPlexSans_400Regular'
+  },
+  notificationText: {
     color: 'black',
     fontWeight: 'bold',
     fontSize: 20,
