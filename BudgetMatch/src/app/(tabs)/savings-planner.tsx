@@ -68,7 +68,11 @@ export default function SavingsPlannerPage() {
       priority: true
     };
 
-    if (goal.length === 0) {
+    // check for duplicate goal
+    const goalExists = goals.some(g => g.name === goal);
+    console.log(goalExists);
+
+    if (goal.length === 0 || goalExists) {
       isCurrentFormValid.goal = false;
     }
     if (amount.length === 0 || Number(amount) === 0) {
@@ -187,6 +191,10 @@ export default function SavingsPlannerPage() {
 
   const deleteGoal = () => {
     const updatedGoals = goals.filter(g => g.name !== goal);
+
+    const remaining = contributionRemaining + Number(contribution);
+
+    setContributionRemaining(remaining);
     
     setGoals(updatedGoals);
     setViewModalShown(false);
@@ -306,7 +314,7 @@ export default function SavingsPlannerPage() {
                 value={goal}
                 onChangeText={setGoal}
               />
-              {isFormValid.goal ? <></> : <Text style={styles.errorText}>Please enter a goal.</Text>}
+              {isFormValid.goal ? <></> : <Text style={styles.errorText}>Invalid goal.</Text>}
 
               <Text style={styles.modalLabel}>Amount ($)</Text>
               <TextInput
