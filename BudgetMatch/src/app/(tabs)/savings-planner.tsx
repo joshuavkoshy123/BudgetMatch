@@ -15,10 +15,13 @@ export default function SavingsPlannerPage() {
   const [editModalShown, setEditModalShown] = useState(false);
   const [viewModalShown, setViewModalShown] = useState(false);
 
+  // form values
   const [goal, setGoal] = useState('');
   const [amount, setAmount] = useState('');
   const [contribution, setContribution] = useState('');
   const [priority, setPriority] = useState('');
+
+  const [contributionRemaining, setContributionRemaining] = useState(100);
 
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
@@ -39,16 +42,16 @@ export default function SavingsPlannerPage() {
   const contributionRegexPattern = /^\d*\.?\d*$/;
 
   // only do this on first render
-  useEffect(() => {
-    // instantiate default goals
-    const defaultGoals: Goal[] = goals;
-    defaultGoals.push({name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
-    defaultGoals.push({name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
-    defaultGoals.push({name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
-    defaultGoals.push({name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
+  // useEffect(() => {
+  //   // instantiate default goals
+  //   const defaultGoals: Goal[] = goals;
+  //   defaultGoals.push({name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
+  //   defaultGoals.push({name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
+  //   defaultGoals.push({name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
+  //   defaultGoals.push({name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
 
-    setGoals(defaultGoals);
-  }, []);
+  //   setGoals(defaultGoals);
+  // }, []);
 
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {
@@ -71,7 +74,7 @@ export default function SavingsPlannerPage() {
     if (amount.length === 0 || Number(amount) === 0) {
       isCurrentFormValid.amount = false;
     }
-    if (contribution.length === 0 || Number(contribution) <= 0 || Number(contribution) > 100) {
+    if (contribution.length === 0 || Number(contribution) <= 0 || Number(contribution) > contributionRemaining) {
       isCurrentFormValid.contribution = false;
     }
     if (priority.length === 0) {
@@ -89,6 +92,9 @@ export default function SavingsPlannerPage() {
       contribution: Number(contribution),
       priority: priority
     };
+
+    // deduct from contribution remaining
+    setContributionRemaining(contributionRemaining - Number(contribution));
 
     setGoals(currentGoals => [...currentGoals, newGoal]);
     setModalShown(false);
@@ -109,13 +115,23 @@ export default function SavingsPlannerPage() {
       priority: true
     };
 
+    let totalContribution = 0;
+    for (const g of goals) {
+      if (g.name == goal){
+        totalContribution += Number(contribution);
+      }
+      else{
+        totalContribution += g.contribution;
+      }
+    }
+
     if (goal.length === 0) {
       isCurrentFormValid.goal = false;
     }
     if (amount.length === 0 || Number(amount) === 0) {
       isCurrentFormValid.amount = false;
     }
-    if (contribution.length === 0 || Number(contribution) <= 0 || Number(contribution) > 100) {
+    if (contribution.length === 0 || Number(contribution) <= 0 || totalContribution > 100) {
       isCurrentFormValid.contribution = false;
     }
     if (priority.length === 0) {
@@ -140,6 +156,8 @@ export default function SavingsPlannerPage() {
         return oldGoal;
       }
     });
+
+    setContributionRemaining(100 - totalContribution);
 
     setGoals(updatedGoals);
     setEditModalShown(false);
@@ -198,7 +216,7 @@ export default function SavingsPlannerPage() {
         <Text style={styles.headingText}>Savings Planner</Text>
       </View>
       <View style={styles.amountPanel}>
-        <Text style={styles.amountText}>Total Amount Saved: $500</Text>
+        <Text style={styles.amountText}>Contribution Remaining: {contributionRemaining}%</Text>
       </View>
 
       <View style={styles.taskPanel}>
