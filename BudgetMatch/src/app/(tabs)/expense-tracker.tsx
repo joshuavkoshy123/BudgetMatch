@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
 import Svg, { Path, Polyline, Circle, Line, G, Text as SvgText } from 'react-native-svg';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+
+import { Expense } from '@/types';
+import DataManager from '@/data-manager';
 
 // Adds Month Name
 const addMonth = (amount: number) => {
@@ -11,12 +14,6 @@ const addMonth = (amount: number) => {
 }
 
 export default function ExpenseTrackerPage() {
-  type Expense = {
-    description: string;
-    amount: number;
-    category: string;
-    month: string;
-  }
   type CategoryTotal = {
     category: string;
     total: number;
@@ -45,12 +42,18 @@ export default function ExpenseTrackerPage() {
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
 
   // Next 5 Months
-  const monthOptions = [0, 1, 2, 3, 4, 5].map(addMonth);
+  const monthOptions = [-6, -5, -4, -3, -2, -1, 0].map(addMonth);
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
   const [monthMenuOpen, setMonthMenuOpen] = useState(false);
 
   // Only show expenses from month
-  const expenses = allExpenses.filter(expense => expense.month === selectedMonth);
+  const expenses = allExpenses.filter(expense => {
+    const date = new Date(Date.parse(expense.timestamp));
+    const formattedDate = new Date(date.getFullYear(), date.getMonth(), 1)
+      .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+    return formattedDate === selectedMonth;
+  });
 
   const [isFormValid, setIsFormValid] = useState({
     amount: true,
@@ -58,6 +61,12 @@ export default function ExpenseTrackerPage() {
   });
 
   const amountRegexPattern = /^\d*\.?\d{0,2}$/;
+
+  // only do this on first render
+  useEffect(() => {
+    // instantiate default expenses
+    setAllExpenses([...(DataManager.expenses)]);
+  }, []);
 
   // colors for each spending category
   const categoryColors: Record<string, string> = {
@@ -84,54 +93,6 @@ export default function ExpenseTrackerPage() {
       return categoryColors[expenseCategory];
     }
     return categoryColors.Other;
-  }
-
-  // add expense to list of expenses
-  const addExpense = () => {
-
-    // validate user input for form fields
-    let isCurrentFormValid = {
-      amount: true,
-      customCategory: true
-    };
-
-    if (amount.length === 0 || isNaN(Number(amount)) || Number(amount) <= 0) {
-      isCurrentFormValid.amount = false;
-    }
-    if (category === 'Other' && customCategory.trim().length === 0) {
-      isCurrentFormValid.customCategory = false;
-    }
-
-    setIsFormValid(isCurrentFormValid);
-    if (Object.values(isCurrentFormValid).some(valid => !valid)) {
-      return;
-    }
-
-    let finalCategory = category;
-    if (category === 'Other') {
-      finalCategory = customCategory.trim();
-    }
-
-    // default the description to the category if left blank
-    let finalDescription = description.trim();
-    if (finalDescription.length === 0) {
-      finalDescription = finalCategory;
-    }
-
-    const newExpense = {
-      description: finalDescription,
-      amount: Number(amount),
-      category: finalCategory,
-      month: selectedMonth
-    };
-
-    setAllExpenses(currentExpenses => [...currentExpenses, newExpense]);
-    setAddModalShown(false);
-
-    setDescription('');
-    setAmount('');
-    setCategory('Groceries');
-    setCustomCategory('');
   }
 
   const closeAddModal = () => {
@@ -213,7 +174,11 @@ export default function ExpenseTrackerPage() {
     for (let j = 0; j < monthOptions.length; j++){
       let total = 0;
       for (let k = 0; k < allExpenses.length; k++){
-        if (allExpenses[k].category === chartCategories[i] && allExpenses[k].month === monthOptions[j]) {
+        const date = new Date(Date.parse(allExpenses[k].timestamp));
+        const formattedDate = new Date(date.getFullYear(), date.getMonth(), 1)
+          .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+        if (allExpenses[k].category === chartCategories[i] && formattedDate === monthOptions[j]) {
           total += allExpenses[k].amount;
         }
       }
@@ -393,117 +358,24 @@ export default function ExpenseTrackerPage() {
                       { backgroundColor: getCategoryColor(expense.category) },
                     ]}
                   />
-                  <View style={styles.expenseTextContainer}>
+                  <View style={styles.expenseLeftTextContainer}>
                     <Text style={styles.expenseDescription}>{expense.description}</Text>
                     <Text style={styles.expenseCategory}>{expense.category}</Text>
                   </View>
                 </View>
-                <Text style={styles.expenseAmount}>-${expense.amount.toFixed(2)}</Text>
+                <View style={styles.expenseRightTextContainer}>
+                  <Text style={styles.expenseAmount}>-${expense.amount.toFixed(2)}</Text>
+                  <Text style={styles.expenseDate}>{(new Date(expense.timestamp)).toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric',
+                  })}</Text>
+                </View>
               </View>
             ))
           )}
         </View>
-
-        <Pressable
-          style={styles.addExpenseButton}
-          onPress={() => setAddModalShown(true)}
-        >
-          <Text style={styles.addExpenseButtonText}>+ Add an Expense</Text>
-        </Pressable>
       </ScrollView>
-
-      {/* Modal for adding expense */}
-      <Modal
-        visible={addModalShown}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setAddModalShown(false)}
-      >
-        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Add Expense</Text>
-
-                <Pressable
-                  onPress={closeAddModal}
-                  style={styles.closeButton}
-                  hitSlop={10}
-                >
-                  <Text style={styles.closeButtonText}>x</Text>
-                </Pressable>
-              </View>
-
-              <Text style={styles.modalLabel}>Description (optional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Weekly grocery shopping"
-                value={description}
-                onChangeText={setDescription}
-              />
-
-              <Text style={styles.modalLabel}>Amount ($)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 85.50"
-                value={amount}
-                onChangeText={value => {
-                  if (amountRegexPattern.test(value)) {
-                    setAmount(value);
-                  }
-                }}
-                keyboardType="decimal-pad"
-              />
-              {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
-
-              <Text style={styles.modalLabel}>Category</Text>
-              <View style={styles.categoryOptions}>
-                {categories.map(item => (
-                  <Pressable
-                    key={item}
-                    onPress={() => setCategory(item)}
-                    style={[
-                      styles.categoryOption,
-                      category === item && styles.categoryOptionSelected
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryOptionText,
-                        category === item && styles.categoryOptionTextSelected
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* Only display custom category input field if user selects Other */}
-              {category === 'Other' &&
-                <View style={styles.customCategoryPanel}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter a category"
-                    value={customCategory}
-                    onChangeText={setCustomCategory}
-                  />
-                  {isFormValid.customCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
-                </View>
-              }
-
-              <View style={styles.submitPanel}>
-                <Pressable
-                  style={styles.createExpenseButton}
-                  onPress={addExpense}
-                >
-                  <Text style={styles.createExpenseButtonText}>Save Expense</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
@@ -528,7 +400,6 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_700Bold',
   },
   monthDropdown: {
-    width: '90%',
     marginBottom: 16,
   },
   monthButton: {
@@ -727,8 +598,11 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  expenseTextContainer: {
+  expenseLeftTextContainer: {
     flex: 1,
+  },
+  expenseRightTextContainer: {
+    justifyContent: 'flex-end',
   },
   expenseDescription: {
     color: '#25292e',
@@ -745,6 +619,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'IBMPlexSans_700Bold',
     marginLeft: 8,
+    textAlign: 'right'
+  },
+  expenseDate: {
+    color: '#777777',
+    fontSize: 12,
+    marginLeft: 8,
+    textAlign: 'right'
   },
   addExpenseButton: {
     width: '90%',

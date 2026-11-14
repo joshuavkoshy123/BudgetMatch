@@ -3,6 +3,8 @@ import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator, Keyboa
 import { router } from 'expo-router';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 
+import DataManager from "@/data-manager";
+
 export default function Index() {
   const [form, setForm] = useState({
     username: "",
@@ -20,8 +22,9 @@ export default function Index() {
     return <ActivityIndicator size="large" />;
   }
 
-  const login = () => {
+  const login = async () => {
     if (form.username === "TestUser" && form.password === "Budget123") {
+      await DataManager.loadData();
       router.replace("/(tabs)/savings-planner");
     }
     else {

@@ -4,16 +4,13 @@ import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Budget } from '@/types';
+import DataManager from '@/data-manager';
+
 export default function BudgetBuilderPage() {
-  type Budget = {
-    budgetingCategory: string;
-    amount: number;
-    spendingCategory: string;
-    notification: string;
-    notificationThreshold?: number;
-  }
   const [addModalShown, setAddModalShown] = useState(false);
   const [linkModalShown, setLinkModalShown] = useState(false);
+  const [categoryDropdownShown, setCategoryDropdownShown] = useState(false);
   const [notificationModalShown, setNotificationModalShown] = useState(false);
   const [viewModalShown, setViewModalShown] = useState(false);
   const [editModalShown, setEditModalShown] = useState(false);
@@ -33,10 +30,16 @@ export default function BudgetBuilderPage() {
   // store budgets
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
+  const spendingCategories: string[] = [];
+  DataManager.expenses.forEach(expense => {
+    if (!spendingCategories.includes(expense.category)) {
+      spendingCategories.push(expense.category);
+    }
+  });
+
   const [isFormValid, setIsFormValid] = useState({
     budgetingCategory: true,
     amount: true,
-    spendingCategory: true,
     notification: true,
     notificationThreshold: true
   });
@@ -46,14 +49,8 @@ export default function BudgetBuilderPage() {
 
   // only do this on first render
   useEffect(() => {
-    // instantiate default goals
-    const defaultBudgets: Budget[] = budgets;
-    defaultBudgets.push({budgetingCategory: 'Entertainment', amount: 150, spendingCategory: 'Entertainment', notification: 'Yes', notificationThreshold: 80});
-    defaultBudgets.push({budgetingCategory: 'Groceries', amount: 200, spendingCategory: 'Groceries', notification: 'Yes', notificationThreshold: 95});
-    defaultBudgets.push({budgetingCategory: 'Transportation', amount: 100, spendingCategory: 'Transportation', notification: 'No'});
-    defaultBudgets.push({budgetingCategory: 'Fitness', amount: 50, spendingCategory: 'Fitness', notification: 'Yes', notificationThreshold: 90});
-
-    setBudgets(defaultBudgets);
+    // instantiate default budgets
+    setBudgets([...(DataManager.budgets)]);
   }, []);
 
   // Wait until fonts are fully loaded before rendering
@@ -67,16 +64,12 @@ export default function BudgetBuilderPage() {
     let isCurrentFormValid = {
       budgetingCategory: true,
       amount: true,
-      spendingCategory: true,
       notification: true,
       notificationThreshold: true
     };
 
     if (budgetingCategory.length === 0) {
       isCurrentFormValid.budgetingCategory = false;
-    }
-    if (spendingCategory.length === 0) {
-      isCurrentFormValid.spendingCategory = false;
     }
     if (amount.length === 0 || Number(amount) === 0) {
       isCurrentFormValid.amount = false;
@@ -102,6 +95,8 @@ export default function BudgetBuilderPage() {
     };
 
     setBudgets(currentBudgets => [...currentBudgets, newBudget]);
+    DataManager.addBudget(newBudget);
+
     setNotificationModalShown(false);
 
     setBudgetingCategory('');
@@ -116,16 +111,12 @@ export default function BudgetBuilderPage() {
     let isCurrentFormValid = {
       budgetingCategory: true,
       amount: true,
-      spendingCategory: true,
       notification: true,
       notificationThreshold: true
     };
 
     if (budgetingCategory.length === 0) {
       isCurrentFormValid.budgetingCategory = false;
-    }
-    if (spendingCategory.length === 0) {
-      isCurrentFormValid.spendingCategory = false;
     }
     if (amount.length === 0 || Number(amount) === 0) {
       isCurrentFormValid.amount = false;
@@ -149,16 +140,19 @@ export default function BudgetBuilderPage() {
           amount: Number(amount),
           spendingCategory,
           notification
-        }
+        };
         if (notification === 'Yes') {
           updatedBudget.notificationThreshold = Number(notificationThreshold);
         }
+
+        DataManager.editBudget(oldBudgetingCategory, updatedBudget);
 
         return updatedBudget;
       }
       
       return budget;
     });
+
 
     setBudgets(updatedBudgets);
     setEditModalShown(false);
@@ -171,7 +165,8 @@ export default function BudgetBuilderPage() {
   }
 
   const deleteBudget = () => {
-    const updatedBudgets = budgets.filter(budget => budget.budgetingCategory !== budgetingCategory)
+    const updatedBudgets = budgets.filter(budget => budget.budgetingCategory !== budgetingCategory);
+    DataManager.deleteBudget(budgetingCategory);
     
     setBudgets(updatedBudgets);
     setViewModalShown(false);
@@ -183,8 +178,30 @@ export default function BudgetBuilderPage() {
     setNotificationThreshold('');
   }
 
+  const getBudgetProgress = (budget: Budget) => {
+    let currentExpenditure: number = 0;
+    let currentMonth: number = (new Date()).getMonth();
+
+    DataManager.expenses.forEach(expense => {
+      if ((new Date(expense.timestamp)).getMonth() === currentMonth
+        && expense.category === budget.spendingCategory) {
+        currentExpenditure += expense.amount;
+      }
+    })
+
+    return Math.min(100, Math.round((currentExpenditure / budget.amount) * 100));
+  }
+
   const openLinkBudgetModal = () => {
     setAddModalShown(false);
+
+    for (let category of spendingCategories) {
+      if (category.toLowerCase() === budgetingCategory.toLowerCase()) {
+        setSpendingCategory(category);
+        break;
+      }
+    }
+
     setLinkModalShown(true);
   }
 
@@ -220,7 +237,6 @@ export default function BudgetBuilderPage() {
     setIsFormValid({
       budgetingCategory: true,
       amount: true,
-      spendingCategory: true,
       notification: true,
       notificationThreshold: true
     });
@@ -250,48 +266,58 @@ export default function BudgetBuilderPage() {
             </View>
           </Pressable>
           
-          {sortedBudgets.map(budget => (
-            <View key={budget.budgetingCategory} style={styles.fullTask}>
-              <Pressable
-                style={styles.editButton}
-                onPress={() => {
-                  setBudgetingCategory(budget.budgetingCategory);
-                  setOldBudgetingCategory(budget.budgetingCategory);
-                  setAmount(`${budget.amount}`);
-                  setSpendingCategory(budget.spendingCategory);
-                  setNotification(budget.notification);
-                  if (budget.notification === 'Yes') {
-                    setNotificationThreshold(`${budget.notificationThreshold}`);
-                  }
-                  setEditModalShown(true);
-                }}
-              >
-                <Ionicons name="create-outline" color="black" size={20} />
-              </Pressable>
-              <Pressable
-                key={budget.budgetingCategory}
-                style={styles.task}
-                onPress={() => {
-                  setBudgetingCategory(budget.budgetingCategory);
-                  setAmount(`${budget.amount}`);
-                  setSpendingCategory(budget.spendingCategory);
-                  setNotification(budget.notification);
-                  if (budget.notification === 'Yes') {
-                    setNotificationThreshold(`${budget.notificationThreshold}`);
-                  }
-                  setViewModalShown(true);
-                }}>
-                <CircularProgress
-                  value={50}
-                  valueSuffix='%'
-                  radius={30}/>
-                <View>
-                  <Text style={styles.taskText}>{budget.budgetingCategory}</Text>
-                  <Text>Target: ${budget.amount.toLocaleString()}</Text>
-                </View>
-              </Pressable>
-            </View>
-          ))}
+          {sortedBudgets.map(budget => {
+            const progress = getBudgetProgress(budget);
+
+            return (
+              <View key={budget.budgetingCategory} style={styles.fullTask}>
+                <Pressable
+                  style={styles.editButton}
+                  onPress={() => {
+                    setBudgetingCategory(budget.budgetingCategory);
+                    setOldBudgetingCategory(budget.budgetingCategory);
+                    setAmount(`${budget.amount}`);
+                    setSpendingCategory(budget.spendingCategory);
+                    setNotification(budget.notification);
+                    if (budget.notification === 'Yes') {
+                      setNotificationThreshold(`${budget.notificationThreshold}`);
+                    }
+                    setEditModalShown(true);
+                  }}
+                >
+                  <Ionicons name="create-outline" color="black" size={20} />
+                </Pressable>
+                <Pressable
+                  key={budget.budgetingCategory}
+                  style={styles.task}
+                  onPress={() => {
+                    setBudgetingCategory(budget.budgetingCategory);
+                    setAmount(`${budget.amount}`);
+                    setSpendingCategory(budget.spendingCategory);
+                    setNotification(budget.notification);
+                    if (budget.notification === 'Yes') {
+                      setNotificationThreshold(`${budget.notificationThreshold}`);
+                    }
+                    setViewModalShown(true);
+                  }}>
+                  <View style={styles.progressBar}>
+                    <CircularProgress
+                      value={progress}
+                      initialValue={progress}
+                      showProgressValue={false}
+                      radius={30}/>
+                    <View style={styles.progressBarOverlay}>
+                      <Text>{progress}%</Text>
+                    </View>
+                  </View>
+                  <View style={styles.taskDetails}>
+                    <Text style={styles.taskText}>{budget.budgetingCategory}</Text>
+                    <Text>Target: ${budget.amount.toLocaleString()}</Text>
+                  </View>
+                </Pressable>
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -375,14 +401,23 @@ export default function BudgetBuilderPage() {
                 </Pressable>
               </View>
 
-              <Text style={styles.modalLabel}>Category</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Groceries"
-                value={spendingCategory}
-                onChangeText={setSpendingCategory}
-              />
-              {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+              <Text style={styles.modalLabel}>Spending Category</Text>
+              <Pressable onPress={() => setCategoryDropdownShown(shown => !shown)}>
+                <Text style={styles.input}>{spendingCategory || 'Select a category'} ▼</Text>
+              </Pressable>
+              {categoryDropdownShown &&
+                <View>
+                  {spendingCategories.map(category =>
+                    <Pressable key={category} onPress={() => {
+                      setSpendingCategory(category);
+                      setCategoryDropdownShown(false);
+                    }}>
+                      <Text>{category}</Text>
+                    </Pressable>
+                    )
+                  }
+                </View>
+              }
 
               <View style={styles.submitPanel}>
                 <Pressable 
@@ -618,13 +653,22 @@ export default function BudgetBuilderPage() {
               {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
 
               <Text style={styles.modalLabel}>Spending Category</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Groceries"
-                value={spendingCategory}
-                onChangeText={setSpendingCategory}
-              />
-              {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+              <Pressable onPress={() => setCategoryDropdownShown(shown => !shown)}>
+                <Text style={styles.input}>{spendingCategory || 'Select a category'} ▼</Text>
+              </Pressable>
+              {categoryDropdownShown &&
+                <View>
+                  {spendingCategories.map(category =>
+                    <Pressable key={category} onPress={() => {
+                      setSpendingCategory(category);
+                      setCategoryDropdownShown(false);
+                    }}>
+                      <Text>{category}</Text>
+                    </Pressable>
+                    )
+                  }
+                </View>
+              }
 
               <Text style={styles.modalLabel}>Notification</Text>
               <View style={styles.notificationPanel}>
@@ -749,10 +793,20 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderRadius: 10,
     backgroundColor: 'white',
-    flexDirection: 'row',
+    flexDirection: 'row'
+  },
+  progressBar: {
+    width: '40%',
     alignItems: 'center',
+    justifyContent: 'center'
+  },
+  progressBarOverlay: {
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
-    gap: 30
+    alignItems: 'center',
+  },
+  taskDetails: {
+    justifyContent: 'center'
   },
   fullAddTask: {
     flexDirection: 'row',

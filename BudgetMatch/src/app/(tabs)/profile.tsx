@@ -1,13 +1,10 @@
-import { useState } from "react";
 import { Text, View, StyleSheet, TextInput, Pressable, ActivityIndicator, Image } from "react-native";
 import { router } from 'expo-router';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
-import React from 'react';
-import Icon from 'react-native-vector-icons/Ionicons';
+
+import DataManager from "@/data-manager";
 
 export default function Index() {
-
-
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
@@ -17,8 +14,9 @@ export default function Index() {
     return <ActivityIndicator size="large" />;
   }
 
-  const logout = () => {
-      router.replace("/");
+  const logout = async () => {
+    await DataManager.saveData();
+    router.replace("/");
   }
 
   return (

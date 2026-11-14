@@ -1,0 +1,174 @@
+[
+    {
+        "description": "Netflix subscription",
+        "amount": 12.99,
+        "category": "Entertainment",
+        "timestamp": "2026-11-01T10:00:00Z"
+    },
+    {
+        "description": "Hulu subscription",
+        "amount": 9.99,
+        "category": "Entertainment",
+        "timestamp": "2026-11-08T11:00:00Z"
+    },
+    {
+        "description": "Spotify subscription",
+        "amount": 6.99,
+        "category": "Entertainment",
+        "timestamp": "2026-11-05T19:00:00Z"
+    },
+
+    {
+        "description": "Planet Fitness subscription",
+        "amount": 14.99,
+        "category": "Fitness",
+        "timestamp": "2026-11-03T09:00:00Z"
+    },
+    {
+        "description": "Personal gym trainer fees",
+        "amount": 139.99,
+        "category": "Fitness",
+        "timestamp": "2026-11-12T11:30:00Z"
+    },
+
+    {
+        "description": "H-E-B purchase",
+        "amount": 42.87,
+        "category": "Groceries",
+        "timestamp": "2026-11-14T14:00:00Z"
+    },
+    {
+        "description": "Walmart purchase",
+        "amount": 37.95,
+        "category": "Groceries",
+        "timestamp": "2026-11-07T16:00:00Z"
+    },
+
+
+    {
+        "description": "Netflix subscription",
+        "amount": 12.99,
+        "category": "Entertainment",
+        "timestamp": "2026-10-01T10:00:00Z"
+    },
+    {
+        "description": "Hulu subscription",
+        "amount": 9.99,
+        "category": "Entertainment",
+        "timestamp": "2026-10-08T11:00:00Z"
+    },
+    {
+        "description": "Spotify subscription",
+        "amount": 6.99,
+        "category": "Entertainment",
+        "timestamp": "2026-10-05T19:00:00Z"
+    },
+    {
+        "description": "Microsoft Flight Simulator",
+        "amount": 74.99,
+        "category": "Entertainment",
+        "timestamp": "2026-10-17T12:00:00Z"
+    },
+
+    {
+        "description": "Planet Fitness subscription",
+        "amount": 14.99,
+        "category": "Fitness",
+        "timestamp": "2026-10-03T09:00:00Z"
+    },
+    {
+        "description": "Personal gym trainer fees",
+        "amount": 139.99,
+        "category": "Fitness",
+        "timestamp": "2026-10-12T11:30:00Z"
+    },
+    {
+        "description": "Tennis equipment",
+        "amount": 56.93,
+        "category": "Fitness",
+        "timestamp": "2026-10-24T17:00:00Z"
+    },
+
+    {
+        "description": "Walmart purchase",
+        "amount": 42.87,
+        "category": "Groceries",
+        "timestamp": "2026-10-14T14:00:00Z"
+    },
+    {
+        "description": "Kroger purchase",
+        "amount": 37.95,
+        "category": "Groceries",
+        "timestamp": "2026-10-07T16:00:00Z"
+    },
+    {
+        "description": "Sprouts purchase",
+        "amount": 51.92,
+        "category": "Groceries",
+        "timestamp": "2026-10-21T15:00:00Z"
+    },
+
+
+    {
+        "description": "Netflix subscription",
+        "amount": 12.99,
+        "category": "Entertainment",
+        "timestamp": "2026-09-01T10:00:00Z"
+    },
+    {
+        "description": "Hulu subscription",
+        "amount": 9.99,
+        "category": "Entertainment",
+        "timestamp": "2026-09-08T11:00:00Z"
+    },
+    {
+        "description": "Spotify subscription",
+        "amount": 6.99,
+        "category": "Entertainment",
+        "timestamp": "2026-09-05T19:00:00Z"
+    },
+    {
+        "description": "Microsoft Flight Simulator",
+        "amount": 74.99,
+        "category": "Entertainment",
+        "timestamp": "2026-09-17T12:00:00Z"
+    },
+
+    {
+        "description": "Planet Fitness subscription",
+        "amount": 14.99,
+        "category": "Fitness",
+        "timestamp": "2026-09-03T09:00:00Z"
+    },
+    {
+        "description": "Personal gym trainer fees",
+        "amount": 139.99,
+        "category": "Fitness",
+        "timestamp": "2026-09-12T11:30:00Z"
+    },
+    {
+        "description": "Tennis equipment",
+        "amount": 56.93,
+        "category": "Fitness",
+        "timestamp": "2026-09-24T17:00:00Z"
+    },
+
+    {
+        "description": "Walmart purchase",
+        "amount": 42.87,
+        "category": "Groceries",
+        "timestamp": "2026-09-14T14:00:00Z"
+    },
+    {
+        "description": "Kroger purchase",
+        "amount": 37.95,
+        "category": "Groceries",
+        "timestamp": "2026-09-07T16:00:00Z"
+    },
+    {
+        "description": "Sprouts purchase",
+        "amount": 51.92,
+        "category": "Groceries",
+        "timestamp": "2026-09-21T15:00:00Z"
+    }
+]

@@ -4,19 +4,17 @@ import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Goal } from '@/types';
+import DataManager from '@/data-manager';
+
 export default function SavingsPlannerPage() {
-  type Goal = {
-    name: string;
-    amount: number;
-    contribution: number;
-    priority: string;
-  }
   const [modalShown, setModalShown] = useState(false);
   const [editModalShown, setEditModalShown] = useState(false);
   const [viewModalShown, setViewModalShown] = useState(false);
 
   // form values
   const [goal, setGoal] = useState('');
+  const [oldGoal, setOldGoal] = useState('');
   const [amount, setAmount] = useState('');
   const [contribution, setContribution] = useState('');
   const [priority, setPriority] = useState('');
@@ -42,16 +40,15 @@ export default function SavingsPlannerPage() {
   const contributionRegexPattern = /^\d*\.?\d*$/;
 
   // only do this on first render
-  // useEffect(() => {
-  //   // instantiate default goals
-  //   const defaultGoals: Goal[] = goals;
-  //   defaultGoals.push({name: 'Save for a Car', amount: 10000, contribution: 50, priority: 'High'});
-  //   defaultGoals.push({name: 'Save for a Laptop', amount: 500, contribution: 25, priority: 'High'});
-  //   defaultGoals.push({name: 'New Backpack', amount: 50, contribution: 5, priority: 'Medium'});
-  //   defaultGoals.push({name: 'Skateboard', amount: 100, contribution: 5, priority: 'Low'});
+  useEffect(() => {
+    // instantiate default goals
+    const existingGoals = DataManager.goals;
+    setGoals([...existingGoals]);
 
-  //   setGoals(defaultGoals);
-  // }, []);
+    let totalContribution = 0;
+    existingGoals.forEach(existingGoal => (totalContribution += existingGoal.contribution));
+    setContributionRemaining(contributionRemaining - totalContribution);
+  }, []);
 
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {
@@ -101,6 +98,8 @@ export default function SavingsPlannerPage() {
     setContributionRemaining(contributionRemaining - Number(contribution));
 
     setGoals(currentGoals => [...currentGoals, newGoal]);
+    DataManager.addGoal(newGoal);
+
     setModalShown(false);
 
     setGoal('');
@@ -121,10 +120,10 @@ export default function SavingsPlannerPage() {
 
     let totalContribution = 0;
     for (const g of goals) {
-      if (g.name == goal){
+      if (g.name == goal) {
         totalContribution += Number(contribution);
       }
-      else{
+      else {
         totalContribution += g.contribution;
       }
     }
@@ -147,17 +146,21 @@ export default function SavingsPlannerPage() {
       return;
     }
 
-    const updatedGoals = goals.map(oldGoal => {
-      if (oldGoal.name === goal) {
-        return {
+    const updatedGoals = goals.map(g => {
+      if (g.name === oldGoal) {
+        const updatedGoal: Goal = {
           name: goal,
           amount: Number(amount),
           contribution: Number(contribution),
           priority: priority
-        }
+        };
+        
+        DataManager.editGoal(oldGoal, updatedGoal);
+
+        return updatedGoal;
       }
       else {
-        return oldGoal;
+        return g;
       }
     });
 
@@ -191,6 +194,7 @@ export default function SavingsPlannerPage() {
 
   const deleteGoal = () => {
     const updatedGoals = goals.filter(g => g.name !== goal);
+    DataManager.deleteGoal(goal);
 
     const remaining = contributionRemaining + Number(contribution);
 
@@ -229,11 +233,13 @@ export default function SavingsPlannerPage() {
 
       <View style={styles.taskPanel}>
         <ScrollView style={styles.taskScrollPanel}>
-          <Pressable 
-            style={styles.addTask}
-            onPress={() => setModalShown(true)}
-          >
-            <Text style={styles.taskText}>+ Create a Goal</Text>
+          <Pressable style={styles.fullAddTask} onPress={() => setModalShown(true)}>
+            <View style={styles.addButton}>
+              <Ionicons name="add-outline" color="black" size={20} />
+            </View>
+            <View style={styles.addTask}>
+              <Text style={styles.taskText}>Create a Goal</Text>
+            </View>
           </Pressable>
           
           {sortedGoals.map(goal => (
@@ -243,6 +249,7 @@ export default function SavingsPlannerPage() {
                 style={styles.editButton}
                 onPress={() => {
                   setGoal(goal.name);
+                  setOldGoal(goal.name);
                   setAmount(goal.amount.toString());
                   setContribution(goal.contribution.toString());
                   setPriority(goal.priority);
@@ -268,11 +275,17 @@ export default function SavingsPlannerPage() {
                   setViewModalShown(true);
                 }}
               >
-                <CircularProgress
-                  value={50}
-                  valueSuffix='%'
-                  radius={30}/>
-                <View>
+                <View style={styles.progressBar}>
+                  <CircularProgress
+                    value={30}
+                    initialValue={30}
+                    showProgressValue={false}
+                    radius={30}/>
+                  <View style={styles.progressBarOverlay}>
+                    <Text>30%</Text>
+                  </View>
+                </View>
+                <View style={styles.taskDetails}>
                   <Text style={styles.taskText}>{goal.name}</Text>
                   <Text>Target: ${goal.amount.toLocaleString()}</Text>
                   <Text>Contribution: {goal.contribution}%</Text>
@@ -417,7 +430,7 @@ export default function SavingsPlannerPage() {
               <TextInput
                 style={styles.input}
                 value={goal}
-                editable={false}
+                onChangeText={setGoal}
               />
               {isFormValid.goal ? <></> : <Text style={styles.errorText}>Please enter a goal.</Text>}
 
@@ -637,7 +650,9 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_400Regular'
   },
   addTask: {
+    flex: 1,
     height: 120,
+    borderStyle: 'dashed',
     borderColor: 'black',
     borderWidth: 3,
     borderRadius: 10,
@@ -647,20 +662,47 @@ const styles = StyleSheet.create({
   },
   task: {
     flex: 1,
-    marginTop: 15,
     height: 120,
     borderColor: 'black',
     borderWidth: 3,
     borderRadius: 10,
     backgroundColor: 'white',
+    flexDirection: 'row'
+  },
+  progressBar: {
+    width: '40%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  progressBarOverlay: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  taskDetails: {
+    width: '60%',
+    paddingRight: '10%',
+    justifyContent: 'center'
+  },
+  fullAddTask: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    alignItems: 'center',
     gap: 10
   },
   fullTask: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10
+  },
+  addButton: {
+    backgroundColor: '#D9DDDC',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    borderColor: 'black',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   editButton: {
     backgroundColor: 'white',
@@ -679,9 +721,7 @@ const styles = StyleSheet.create({
     borderColor: 'red',
     borderWidth: 3,
     borderRadius: 10,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'white'
   },
   mediumPriorityTask: {
     marginTop: 15,
@@ -689,9 +729,7 @@ const styles = StyleSheet.create({
     borderColor: 'yellow',
     borderWidth: 3,
     borderRadius: 10,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'white'
   },
   lowPriorityTask: {
     marginTop: 15,
@@ -699,9 +737,7 @@ const styles = StyleSheet.create({
     borderColor: 'green',
     borderWidth: 3,
     borderRadius: 10,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'white'
   },
   taskText: {
     color: 'black',
