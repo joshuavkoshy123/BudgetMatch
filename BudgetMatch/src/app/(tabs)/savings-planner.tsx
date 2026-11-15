@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert, TouchableOpacity } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent, ScrollViewInstance } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,17 @@ export default function SavingsPlannerPage() {
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
   });
+
+  const [isAtPageTop, setIsAtPageTop] = useState(true);
+  const [layoutHeight, setLayoutHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const isPageScrollable = layoutHeight > 0 && contentHeight > layoutHeight + 10;
+
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  const handleScrollEvent = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setIsAtPageTop(offsetY <= 10);
+  };
 
   // store goals
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -232,7 +244,15 @@ export default function SavingsPlannerPage() {
       </View>
 
       <View style={styles.taskPanel}>
-        <ScrollView style={styles.taskScrollPanel}>
+        <ScrollView style={styles.taskScrollPanel}
+          ref={scrollViewRef}
+          onScroll={handleScrollEvent}
+          onLayout={(e) => {
+            setLayoutHeight(e.nativeEvent.layout.height);
+          }}
+          onContentSizeChange={(_, height) => {
+            setContentHeight(height);
+          }}>
           <Pressable style={styles.fullAddTask} onPress={() => setModalShown(true)}>
             <View style={styles.addButton}>
               <Ionicons name="add-outline" color="black" size={20} />
@@ -294,6 +314,14 @@ export default function SavingsPlannerPage() {
             </View>
           ))}
         </ScrollView>
+        {isAtPageTop && isPageScrollable && (
+          <TouchableOpacity
+            style={styles.arrowContainer}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.arrowText}>↓</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Modal for adding savings goal */}
@@ -871,4 +899,26 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 32,
   },
+
+  arrowContainer: {
+    position: 'absolute',
+    bottom: 24,
+    alignSelf: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4
+  },
+  arrowText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold'
+  }
 });

@@ -27,6 +27,14 @@ export default class DataManager {
         DataManager.goals.push(goal);
     }
 
+    static editExpenseCategory(oldCategory: string, newCategory: string) {
+        for (let expense of DataManager.expenses) {
+            if (expense.category === oldCategory) {
+                expense.category = newCategory;
+            }
+        }
+    }
+
     static editBudget(budgetingCategory: string, newBudget: Budget) {
         this.deleteBudget(budgetingCategory);
         this.addBudget(newBudget);
@@ -48,6 +56,9 @@ export default class DataManager {
     }
 
     static async saveData() {
+        const currentExpenses = JSON.stringify(DataManager.expenses);
+        await AsyncStorage.setItem('expenses', currentExpenses);
+
         const currentBudgets = JSON.stringify(DataManager.budgets);
         await AsyncStorage.setItem('budgets', currentBudgets);
 

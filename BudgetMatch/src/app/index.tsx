@@ -25,7 +25,7 @@ export default function Index() {
   const login = async () => {
     if (form.username === "TestUser" && form.password === "Budget123") {
       await DataManager.loadData();
-      router.replace("/(tabs)/savings-planner");
+      router.replace("/(tabs)/expense-tracker");
     }
     else {
       setIsLoginValid(false);

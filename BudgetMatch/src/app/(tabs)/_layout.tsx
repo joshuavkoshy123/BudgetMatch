@@ -11,32 +11,29 @@ export default function TabLayout() {
         fontSize: 10,
       }}
     >
-      <NativeTabs.Trigger name="savings-planner">
-        <NativeTabs.Trigger.Label>Savings</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="expense-tracker">
+        <NativeTabs.Trigger.Label>Expenses</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
-          md="info"
+          sf={{ default: 'creditcard', selected: 'creditcard.fill' }}
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="budget-builder">
         <NativeTabs.Trigger.Label>Budgets</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
-          md="info"
+          sf={{ default: 'chart.pie', selected: 'chart.pie.fill' }}
         />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="expense-tracker">
-        <NativeTabs.Trigger.Label>Expenses</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="savings-planner">
+        <NativeTabs.Trigger.Label>Savings</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'info.circle', selected: 'info.circle.fill' }}
-          md="info"
+          sf={{ default: 'dollarsign.circle', selected: 'dollarsign.circle.fill' }}
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label selectedStyle={{color: 'black'}}>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person', selected: 'person.fill' }}
-          md="info"
+          selectedColor="black"
         />
       </NativeTabs.Trigger>
     </NativeTabs>

@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert } from 'react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Budget } from '@/types';
@@ -21,21 +23,39 @@ export default function BudgetBuilderPage() {
   const [spendingCategory, setSpendingCategory] = useState('');
   const [notification, setNotification] = useState('');
   const [notificationThreshold, setNotificationThreshold] = useState('');
+  const [notificationWidgetShown, setNotificationWidgetShown] = useState(false);
 
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
   });
 
+  const [isAtPageTop, setIsAtPageTop] = useState(true);
+  const [layoutHeight, setLayoutHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const isPageScrollable = layoutHeight > 0 && contentHeight > layoutHeight + 10;
+
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  const handleScrollEvent = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setIsAtPageTop(offsetY <= 10);
+  };
+
   // store budgets
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
-  const spendingCategories: string[] = [];
-  DataManager.expenses.forEach(expense => {
-    if (!spendingCategories.includes(expense.category)) {
-      spendingCategories.push(expense.category);
-    }
-  });
+  const [spendingCategories, setSpendingCategories] = useState<string[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      const categories: string[] = [];
+      DataManager.expenses.forEach(expense => {
+        if (!categories.includes(expense.category)) {
+          categories.push(expense.category);
+        }
+      })
+      setSpendingCategories(categories);
+    }, [])
+  );
 
   const [isFormValid, setIsFormValid] = useState({
     budgetingCategory: true,
@@ -180,10 +200,12 @@ export default function BudgetBuilderPage() {
 
   const getBudgetProgress = (budget: Budget) => {
     let currentExpenditure: number = 0;
+    let currentYear: number = (new Date()).getFullYear();
     let currentMonth: number = (new Date()).getMonth();
 
     DataManager.expenses.forEach(expense => {
       if ((new Date(expense.timestamp)).getMonth() === currentMonth
+        && (new Date(expense.timestamp)).getFullYear() === currentYear
         && expense.category === budget.spendingCategory) {
         currentExpenditure += expense.amount;
       }
@@ -252,11 +274,22 @@ export default function BudgetBuilderPage() {
 
   return (
     <View style={styles.container}>
+      <Pressable style={styles.notificationButton} onPress={() => setNotificationWidgetShown(true)}>
+        <Ionicons name="notifications-outline" color="black" size={20} />
+      </Pressable>
       <View style={styles.headingPanel}>
         <Text style={styles.headingText}>Budget Builder</Text>
       </View>
       <View style={styles.taskPanel}>
-        <ScrollView style={styles.taskScrollPanel}>
+        <ScrollView style={styles.taskScrollPanel}
+          ref={scrollViewRef}
+          onScroll={handleScrollEvent}
+          onLayout={(e) => {
+            setLayoutHeight(e.nativeEvent.layout.height);
+          }}
+          onContentSizeChange={(_, height) => {
+            setContentHeight(height);
+          }}>
           <Pressable style={styles.fullAddTask} onPress={() => setAddModalShown(true)}>
             <View style={styles.addButton}>
               <Ionicons name="add-outline" color="black" size={20} />
@@ -319,6 +352,14 @@ export default function BudgetBuilderPage() {
             );
           })}
         </ScrollView>
+        {isAtPageTop && isPageScrollable && (
+          <TouchableOpacity
+            style={styles.arrowContainer}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.arrowText}>↓</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Modal for adding budget */}
@@ -390,6 +431,16 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
+                <Pressable
+                  onPress={() => {
+                    closeLinkModal();
+                    setAddModalShown(true);
+                  }}
+                  style={styles.backButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>{'<'}</Text>
+                </Pressable>
                 <Text style={styles.modalTitle}>Link Spending Category</Text>
 
                 <Pressable
@@ -402,22 +453,24 @@ export default function BudgetBuilderPage() {
               </View>
 
               <Text style={styles.modalLabel}>Spending Category</Text>
-              <Pressable onPress={() => setCategoryDropdownShown(shown => !shown)}>
-                <Text style={styles.input}>{spendingCategory || 'Select a category'} ▼</Text>
-              </Pressable>
-              {categoryDropdownShown &&
-                <View>
-                  {spendingCategories.map(category =>
-                    <Pressable key={category} onPress={() => {
-                      setSpendingCategory(category);
-                      setCategoryDropdownShown(false);
-                    }}>
-                      <Text>{category}</Text>
-                    </Pressable>
-                    )
-                  }
-                </View>
-              }
+              <View style={styles.dropdown}>
+                <Pressable onPress={() => setCategoryDropdownShown(shown => !shown)}>
+                  <Text style={styles.input}>{spendingCategory || 'Select a category'} ▼</Text>
+                </Pressable>
+                {categoryDropdownShown &&
+                  <View>
+                    {spendingCategories.map(category =>
+                      <Pressable key={category} onPress={() => {
+                        setSpendingCategory(category);
+                        setCategoryDropdownShown(false);
+                      }}>
+                        <Text style={styles.dropdownText}>{category}</Text>
+                      </Pressable>
+                      )
+                    }
+                  </View>
+                }
+              </View>
 
               <View style={styles.submitPanel}>
                 <Pressable 
@@ -443,6 +496,16 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
+                <Pressable
+                  onPress={() => {
+                    closeNotificationModal();
+                    setLinkModalShown(true);
+                  }}
+                  style={styles.backButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>{'<'}</Text>
+                </Pressable>
                 <Text style={styles.modalTitle}>Set Notification</Text>
 
                 <Pressable
@@ -479,7 +542,7 @@ export default function BudgetBuilderPage() {
 
               {/* Only display threshold input field if user wants notifications */}
               {notification === 'Yes' &&
-                <View>
+                <View style={styles.notificationThreshold}>
                   <Text style={styles.modalLabel}>Threshold (%)</Text>
                   <TextInput
                     style={styles.input}
@@ -695,7 +758,7 @@ export default function BudgetBuilderPage() {
 
               {/* Only display threshold input field if user wants notifications */}
               {notification === 'Yes' &&
-                <View>
+                <View style={styles.notificationThreshold}>
                   <Text style={styles.modalLabel}>Threshold (%)</Text>
                   <TextInput
                     style={styles.input}
@@ -829,6 +892,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
+  notificationButton: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    borderColor: 'black',
+    position: 'absolute',
+    top: 50,
+    left: 50
+  },
   editButton: {
     backgroundColor: 'white',
     paddingVertical: 10,
@@ -864,6 +937,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   modalTitle: {
+    width: '70%',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -895,6 +969,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'white',
     color: '#25292e',
+  },
+  dropdown: {
+    gap: 5
+  },
+  dropdownText: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginTop: -1
   },
   noButton: {
     color: 'white',
@@ -931,6 +1015,9 @@ const styles = StyleSheet.create({
     gap: 48,
     width: '100%'
   },
+  notificationThreshold: {
+    gap: 16
+  },
   submitPanel: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -949,6 +1036,9 @@ const styles = StyleSheet.create({
     width: '100%'
   },
 
+  backButton: {
+    marginRight: 5
+  },
   closeButton: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -959,4 +1049,26 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 32,
   },
+
+  arrowContainer: {
+    position: 'absolute',
+    bottom: 24,
+    alignSelf: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4
+  },
+  arrowText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold'
+  }
 });
