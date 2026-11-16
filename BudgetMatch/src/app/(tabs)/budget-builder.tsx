@@ -1,19 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert } from 'react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Budget } from '@/types';
+import DataManager from '@/data-manager';
+
 export default function BudgetBuilderPage() {
-  type Budget = {
-    budgetingCategory: string;
-    amount: number;
-    spendingCategory: string;
-    notification: string;
-    notificationThreshold?: number;
-  }
   const [addModalShown, setAddModalShown] = useState(false);
   const [linkModalShown, setLinkModalShown] = useState(false);
+  const [categoryDropdownShown, setCategoryDropdownShown] = useState(false);
   const [notificationModalShown, setNotificationModalShown] = useState(false);
   const [viewModalShown, setViewModalShown] = useState(false);
   const [editModalShown, setEditModalShown] = useState(false);
@@ -24,19 +23,43 @@ export default function BudgetBuilderPage() {
   const [spendingCategory, setSpendingCategory] = useState('');
   const [notification, setNotification] = useState('');
   const [notificationThreshold, setNotificationThreshold] = useState('');
+  const [notificationWidgetShown, setNotificationWidgetShown] = useState(false);
 
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
   });
 
+  const [isAtPageTop, setIsAtPageTop] = useState(true);
+  const [layoutHeight, setLayoutHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const isPageScrollable = layoutHeight > 0 && contentHeight > layoutHeight + 10;
+
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  const handleScrollEvent = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setIsAtPageTop(offsetY <= 10);
+  };
+
   // store budgets
   const [budgets, setBudgets] = useState<Budget[]>([]);
+
+  const [spendingCategories, setSpendingCategories] = useState<string[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      const categories: string[] = [];
+      DataManager.expenses.forEach(expense => {
+        if (!categories.includes(expense.category)) {
+          categories.push(expense.category);
+        }
+      })
+      setSpendingCategories(categories);
+    }, [])
+  );
 
   const [isFormValid, setIsFormValid] = useState({
     budgetingCategory: true,
     amount: true,
-    spendingCategory: true,
     notification: true,
     notificationThreshold: true
   });
@@ -46,14 +69,8 @@ export default function BudgetBuilderPage() {
 
   // only do this on first render
   useEffect(() => {
-    // instantiate default goals
-    const defaultBudgets: Budget[] = budgets;
-    defaultBudgets.push({budgetingCategory: 'Entertainment', amount: 150, spendingCategory: 'Entertainment', notification: 'Yes', notificationThreshold: 80});
-    defaultBudgets.push({budgetingCategory: 'Groceries', amount: 200, spendingCategory: 'Groceries', notification: 'Yes', notificationThreshold: 95});
-    defaultBudgets.push({budgetingCategory: 'Transportation', amount: 100, spendingCategory: 'Transportation', notification: 'No'});
-    defaultBudgets.push({budgetingCategory: 'Fitness', amount: 50, spendingCategory: 'Fitness', notification: 'Yes', notificationThreshold: 90});
-
-    setBudgets(defaultBudgets);
+    // instantiate default budgets
+    setBudgets([...(DataManager.budgets)]);
   }, []);
 
   // Wait until fonts are fully loaded before rendering
@@ -67,16 +84,12 @@ export default function BudgetBuilderPage() {
     let isCurrentFormValid = {
       budgetingCategory: true,
       amount: true,
-      spendingCategory: true,
       notification: true,
       notificationThreshold: true
     };
 
     if (budgetingCategory.length === 0) {
       isCurrentFormValid.budgetingCategory = false;
-    }
-    if (spendingCategory.length === 0) {
-      isCurrentFormValid.spendingCategory = false;
     }
     if (amount.length === 0 || Number(amount) === 0) {
       isCurrentFormValid.amount = false;
@@ -102,6 +115,8 @@ export default function BudgetBuilderPage() {
     };
 
     setBudgets(currentBudgets => [...currentBudgets, newBudget]);
+    DataManager.addBudget(newBudget);
+
     setNotificationModalShown(false);
 
     setBudgetingCategory('');
@@ -116,16 +131,12 @@ export default function BudgetBuilderPage() {
     let isCurrentFormValid = {
       budgetingCategory: true,
       amount: true,
-      spendingCategory: true,
       notification: true,
       notificationThreshold: true
     };
 
     if (budgetingCategory.length === 0) {
       isCurrentFormValid.budgetingCategory = false;
-    }
-    if (spendingCategory.length === 0) {
-      isCurrentFormValid.spendingCategory = false;
     }
     if (amount.length === 0 || Number(amount) === 0) {
       isCurrentFormValid.amount = false;
@@ -149,16 +160,19 @@ export default function BudgetBuilderPage() {
           amount: Number(amount),
           spendingCategory,
           notification
-        }
+        };
         if (notification === 'Yes') {
           updatedBudget.notificationThreshold = Number(notificationThreshold);
         }
+
+        DataManager.editBudget(oldBudgetingCategory, updatedBudget);
 
         return updatedBudget;
       }
       
       return budget;
     });
+
 
     setBudgets(updatedBudgets);
     setEditModalShown(false);
@@ -171,7 +185,8 @@ export default function BudgetBuilderPage() {
   }
 
   const deleteBudget = () => {
-    const updatedBudgets = budgets.filter(budget => budget.budgetingCategory !== budgetingCategory)
+    const updatedBudgets = budgets.filter(budget => budget.budgetingCategory !== budgetingCategory);
+    DataManager.deleteBudget(budgetingCategory);
     
     setBudgets(updatedBudgets);
     setViewModalShown(false);
@@ -183,8 +198,32 @@ export default function BudgetBuilderPage() {
     setNotificationThreshold('');
   }
 
+  const getBudgetProgress = (budget: Budget) => {
+    let currentExpenditure: number = 0;
+    let currentYear: number = (new Date()).getFullYear();
+    let currentMonth: number = (new Date()).getMonth();
+
+    DataManager.expenses.forEach(expense => {
+      if ((new Date(expense.timestamp)).getMonth() === currentMonth
+        && (new Date(expense.timestamp)).getFullYear() === currentYear
+        && expense.category === budget.spendingCategory) {
+        currentExpenditure += expense.amount;
+      }
+    })
+
+    return Math.min(100, Math.round((currentExpenditure / budget.amount) * 100));
+  }
+
   const openLinkBudgetModal = () => {
     setAddModalShown(false);
+
+    for (let category of spendingCategories) {
+      if (category.toLowerCase() === budgetingCategory.toLowerCase()) {
+        setSpendingCategory(category);
+        break;
+      }
+    }
+
     setLinkModalShown(true);
   }
 
@@ -220,7 +259,6 @@ export default function BudgetBuilderPage() {
     setIsFormValid({
       budgetingCategory: true,
       amount: true,
-      spendingCategory: true,
       notification: true,
       notificationThreshold: true
     });
@@ -236,11 +274,22 @@ export default function BudgetBuilderPage() {
 
   return (
     <View style={styles.container}>
+      <Pressable style={styles.notificationButton} onPress={() => setNotificationWidgetShown(true)}>
+        <Ionicons name="notifications-outline" color="black" size={20} />
+      </Pressable>
       <View style={styles.headingPanel}>
         <Text style={styles.headingText}>Budget Builder</Text>
       </View>
       <View style={styles.taskPanel}>
-        <ScrollView style={styles.taskScrollPanel}>
+        <ScrollView style={styles.taskScrollPanel}
+          ref={scrollViewRef}
+          onScroll={handleScrollEvent}
+          onLayout={(e) => {
+            setLayoutHeight(e.nativeEvent.layout.height);
+          }}
+          onContentSizeChange={(_, height) => {
+            setContentHeight(height);
+          }}>
           <Pressable style={styles.fullAddTask} onPress={() => setAddModalShown(true)}>
             <View style={styles.addButton}>
               <Ionicons name="add-outline" color="black" size={20} />
@@ -250,49 +299,67 @@ export default function BudgetBuilderPage() {
             </View>
           </Pressable>
           
-          {sortedBudgets.map(budget => (
-            <View key={budget.budgetingCategory} style={styles.fullTask}>
-              <Pressable
-                style={styles.editButton}
-                onPress={() => {
-                  setBudgetingCategory(budget.budgetingCategory);
-                  setOldBudgetingCategory(budget.budgetingCategory);
-                  setAmount(`${budget.amount}`);
-                  setSpendingCategory(budget.spendingCategory);
-                  setNotification(budget.notification);
-                  if (budget.notification === 'Yes') {
-                    setNotificationThreshold(`${budget.notificationThreshold}`);
-                  }
-                  setEditModalShown(true);
-                }}
-              >
-                <Ionicons name="create-outline" color="black" size={20} />
-              </Pressable>
-              <Pressable
-                key={budget.budgetingCategory}
-                style={styles.task}
-                onPress={() => {
-                  setBudgetingCategory(budget.budgetingCategory);
-                  setAmount(`${budget.amount}`);
-                  setSpendingCategory(budget.spendingCategory);
-                  setNotification(budget.notification);
-                  if (budget.notification === 'Yes') {
-                    setNotificationThreshold(`${budget.notificationThreshold}`);
-                  }
-                  setViewModalShown(true);
-                }}>
-                <CircularProgress
-                  value={50}
-                  valueSuffix='%'
-                  radius={30}/>
-                <View>
-                  <Text style={styles.taskText}>{budget.budgetingCategory}</Text>
-                  <Text>Target: ${budget.amount.toLocaleString()}</Text>
-                </View>
-              </Pressable>
-            </View>
-          ))}
+          {sortedBudgets.map(budget => {
+            const progress = getBudgetProgress(budget);
+
+            return (
+              <View key={budget.budgetingCategory} style={styles.fullTask}>
+                <Pressable
+                  style={styles.editButton}
+                  onPress={() => {
+                    setBudgetingCategory(budget.budgetingCategory);
+                    setOldBudgetingCategory(budget.budgetingCategory);
+                    setAmount(`${budget.amount}`);
+                    setSpendingCategory(budget.spendingCategory);
+                    setNotification(budget.notification);
+                    if (budget.notification === 'Yes') {
+                      setNotificationThreshold(`${budget.notificationThreshold}`);
+                    }
+                    setEditModalShown(true);
+                  }}
+                >
+                  <Ionicons name="create-outline" color="black" size={20} />
+                </Pressable>
+                <Pressable
+                  key={budget.budgetingCategory}
+                  style={styles.task}
+                  onPress={() => {
+                    setBudgetingCategory(budget.budgetingCategory);
+                    setAmount(`${budget.amount}`);
+                    setSpendingCategory(budget.spendingCategory);
+                    setNotification(budget.notification);
+                    if (budget.notification === 'Yes') {
+                      setNotificationThreshold(`${budget.notificationThreshold}`);
+                    }
+                    setViewModalShown(true);
+                  }}>
+                  <View style={styles.progressBar}>
+                    <CircularProgress
+                      value={progress}
+                      initialValue={progress}
+                      showProgressValue={false}
+                      radius={30}/>
+                    <View style={styles.progressBarOverlay}>
+                      <Text>{progress}%</Text>
+                    </View>
+                  </View>
+                  <View style={styles.taskDetails}>
+                    <Text style={styles.taskText}>{budget.budgetingCategory}</Text>
+                    <Text>Target: ${budget.amount.toLocaleString()}</Text>
+                  </View>
+                </Pressable>
+              </View>
+            );
+          })}
         </ScrollView>
+        {isAtPageTop && isPageScrollable && (
+          <TouchableOpacity
+            style={styles.arrowContainer}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.arrowText}>↓</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Modal for adding budget */}
@@ -364,6 +431,16 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
+                <Pressable
+                  onPress={() => {
+                    closeLinkModal();
+                    setAddModalShown(true);
+                  }}
+                  style={styles.backButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>{'<'}</Text>
+                </Pressable>
                 <Text style={styles.modalTitle}>Link Spending Category</Text>
 
                 <Pressable
@@ -375,14 +452,25 @@ export default function BudgetBuilderPage() {
                 </Pressable>
               </View>
 
-              <Text style={styles.modalLabel}>Category</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Groceries"
-                value={spendingCategory}
-                onChangeText={setSpendingCategory}
-              />
-              {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+              <Text style={styles.modalLabel}>Spending Category</Text>
+              <View style={styles.dropdown}>
+                <Pressable onPress={() => setCategoryDropdownShown(shown => !shown)}>
+                  <Text style={styles.input}>{spendingCategory || 'Select a category'} ▼</Text>
+                </Pressable>
+                {categoryDropdownShown &&
+                  <View>
+                    {spendingCategories.map(category =>
+                      <Pressable key={category} onPress={() => {
+                        setSpendingCategory(category);
+                        setCategoryDropdownShown(false);
+                      }}>
+                        <Text style={styles.dropdownText}>{category}</Text>
+                      </Pressable>
+                      )
+                    }
+                  </View>
+                }
+              </View>
 
               <View style={styles.submitPanel}>
                 <Pressable 
@@ -408,6 +496,16 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
+                <Pressable
+                  onPress={() => {
+                    closeNotificationModal();
+                    setLinkModalShown(true);
+                  }}
+                  style={styles.backButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>{'<'}</Text>
+                </Pressable>
                 <Text style={styles.modalTitle}>Set Notification</Text>
 
                 <Pressable
@@ -444,7 +542,7 @@ export default function BudgetBuilderPage() {
 
               {/* Only display threshold input field if user wants notifications */}
               {notification === 'Yes' &&
-                <View>
+                <View style={styles.notificationThreshold}>
                   <Text style={styles.modalLabel}>Threshold (%)</Text>
                   <TextInput
                     style={styles.input}
@@ -618,13 +716,22 @@ export default function BudgetBuilderPage() {
               {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
 
               <Text style={styles.modalLabel}>Spending Category</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Groceries"
-                value={spendingCategory}
-                onChangeText={setSpendingCategory}
-              />
-              {isFormValid.spendingCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
+              <Pressable onPress={() => setCategoryDropdownShown(shown => !shown)}>
+                <Text style={styles.input}>{spendingCategory || 'Select a category'} ▼</Text>
+              </Pressable>
+              {categoryDropdownShown &&
+                <View>
+                  {spendingCategories.map(category =>
+                    <Pressable key={category} onPress={() => {
+                      setSpendingCategory(category);
+                      setCategoryDropdownShown(false);
+                    }}>
+                      <Text>{category}</Text>
+                    </Pressable>
+                    )
+                  }
+                </View>
+              }
 
               <Text style={styles.modalLabel}>Notification</Text>
               <View style={styles.notificationPanel}>
@@ -651,7 +758,7 @@ export default function BudgetBuilderPage() {
 
               {/* Only display threshold input field if user wants notifications */}
               {notification === 'Yes' &&
-                <View>
+                <View style={styles.notificationThreshold}>
                   <Text style={styles.modalLabel}>Threshold (%)</Text>
                   <TextInput
                     style={styles.input}
@@ -749,10 +856,20 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderRadius: 10,
     backgroundColor: 'white',
-    flexDirection: 'row',
+    flexDirection: 'row'
+  },
+  progressBar: {
+    width: '40%',
     alignItems: 'center',
+    justifyContent: 'center'
+  },
+  progressBarOverlay: {
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
-    gap: 30
+    alignItems: 'center',
+  },
+  taskDetails: {
+    justifyContent: 'center'
   },
   fullAddTask: {
     flexDirection: 'row',
@@ -774,6 +891,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  notificationButton: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    borderColor: 'black',
+    position: 'absolute',
+    top: 50,
+    left: 50
   },
   editButton: {
     backgroundColor: 'white',
@@ -810,6 +937,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   modalTitle: {
+    width: '70%',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -841,6 +969,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'white',
     color: '#25292e',
+  },
+  dropdown: {
+    gap: 5
+  },
+  dropdownText: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginTop: -1
   },
   noButton: {
     color: 'white',
@@ -877,6 +1015,9 @@ const styles = StyleSheet.create({
     gap: 48,
     width: '100%'
   },
+  notificationThreshold: {
+    gap: 16
+  },
   submitPanel: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -895,6 +1036,9 @@ const styles = StyleSheet.create({
     width: '100%'
   },
 
+  backButton: {
+    marginRight: 5
+  },
   closeButton: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -905,4 +1049,26 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 32,
   },
+
+  arrowContainer: {
+    position: 'absolute',
+    bottom: 24,
+    alignSelf: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4
+  },
+  arrowText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold'
+  }
 });
