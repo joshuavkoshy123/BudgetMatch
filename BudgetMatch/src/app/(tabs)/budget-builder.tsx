@@ -10,6 +10,11 @@ import { Budget } from '@/types';
 import DataManager from '@/data-manager';
 
 export default function BudgetBuilderPage() {
+  type Notification = {
+    message: string;
+    timestamp: string;
+  }
+
   const [addModalShown, setAddModalShown] = useState(false);
   const [linkModalShown, setLinkModalShown] = useState(false);
   const [categoryDropdownShown, setCategoryDropdownShown] = useState(false);
@@ -41,8 +46,18 @@ export default function BudgetBuilderPage() {
     setIsAtPageTop(offsetY <= 10);
   };
 
-  // store budgets
+  // store budgets and notifications 
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  useEffect(() => {
+    // instantiate default notifications
+    const defaultNotifications: Notification[] = notifications;
+    defaultNotifications.push({message: 'You have reached 80% of your Entertainment budget.', timestamp: '11/12/2026 10:00 AM'});
+    defaultNotifications.push({message: 'You have reached 95% of your Groceries budget.', timestamp: '11/04/2026 12:30 PM'});
+    defaultNotifications.push({message: 'You have reached 90% of your Fitness budget.', timestamp: '10/26/2026 3:45 PM'});
+
+    setNotifications(defaultNotifications);
+  }, []);
 
   const [spendingCategories, setSpendingCategories] = useState<string[]>([]);
   useFocusEffect(
@@ -256,6 +271,7 @@ export default function BudgetBuilderPage() {
     closeNotificationModal();
     setViewModalShown(false);
     setEditModalShown(false);
+    setNotificationWidgetShown(false);
     setIsFormValid({
       budgetingCategory: true,
       amount: true,
@@ -373,7 +389,7 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Create a Budget</Text>
+                <Text style={styles.modalTitle1}>Create a Budget</Text>
 
                 <Pressable
                   onPress={closeAddModal}
@@ -441,7 +457,7 @@ export default function BudgetBuilderPage() {
                 >
                   <Text style={styles.closeButtonText}>{'<'}</Text>
                 </Pressable>
-                <Text style={styles.modalTitle}>Link Spending Category</Text>
+                <Text style={styles.modalTitle2}>Link Spending Category</Text>
 
                 <Pressable
                   onPress={closeLinkModal}
@@ -506,7 +522,7 @@ export default function BudgetBuilderPage() {
                 >
                   <Text style={styles.closeButtonText}>{'<'}</Text>
                 </Pressable>
-                <Text style={styles.modalTitle}>Set Notification</Text>
+                <Text style={styles.modalTitle2}>Set Notification</Text>
 
                 <Pressable
                   onPress={closeNotificationModal}
@@ -583,7 +599,7 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>View Budget</Text>
+                <Text style={styles.modalTitle1}>View Budget</Text>
 
                 <Pressable
                   onPress={closeAllModals}
@@ -681,7 +697,7 @@ export default function BudgetBuilderPage() {
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Budget</Text>
+                <Text style={styles.modalTitle1}>Edit Budget</Text>
 
                 <Pressable
                   onPress={closeAllModals}
@@ -787,6 +803,42 @@ export default function BudgetBuilderPage() {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Notifications Widget */}
+      <Modal
+        visible={notificationWidgetShown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNotificationWidgetShown(false)}
+      >
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle1}>Notifications</Text>
+
+                <Pressable
+                  onPress={closeAllModals}
+                  style={styles.closeButton}
+                  hitSlop={10}
+                >
+                  <Text style={styles.closeButtonText}>x</Text>
+                </Pressable>
+              </View>
+              <View style={styles.notificationWidgetPanel}>
+                <ScrollView style={styles.notificationScrollPanel}>
+                {notifications.map(notification => (
+                  <View key={`${notification.message} ${notification.timestamp}`} style={styles.notification}>
+                      <Text style={styles.notificationMessage}>{notification.message}</Text>
+                      <Text style={styles.notificationTimestamp}>{notification.timestamp}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+              </View>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -804,6 +856,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#043574',
     borderRadius: 10
   },
+  notificationScrollPanel: {
+    height: 450,
+    backgroundColor: '#043574',
+    borderRadius: 10
+  },
   taskPanel: {
     flexDirection: 'column',
     gap: 20,
@@ -814,6 +871,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 30,
     marginRight: 30
+  },
+  notificationWidgetPanel: {
+    flexDirection: 'column',
+    gap: 20,
+    width: '100%',
+    height: 470,
+    padding: 15,
+    backgroundColor: '#043574',
+    borderRadius: 10,
   },
   headingPanel: {
     padding: 20,
@@ -902,6 +968,30 @@ const styles = StyleSheet.create({
     top: 50,
     left: 50
   },
+  notification: {
+    flex: 1,
+    height: '100%',
+    borderColor: 'black',
+    borderWidth: 3,
+    borderRadius: 10,
+    backgroundColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    marginBottom: 10
+  },
+  notificationMessage: {
+    width: '60%',
+    color: 'black',
+    fontWeight: 'bold',
+    fontSize: 15,
+    fontFamily: 'IBMPlexSans_400Regular'
+  },
+  notificationTimestamp: {
+    width: '40%',
+    textAlign: 'right'
+  },
   editButton: {
     backgroundColor: 'white',
     paddingVertical: 10,
@@ -936,8 +1026,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 16,
   },
-  modalTitle: {
+  modalTitle1: {
     width: '70%',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  modalTitle2: {
+    width: '70%',
+    textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
   },

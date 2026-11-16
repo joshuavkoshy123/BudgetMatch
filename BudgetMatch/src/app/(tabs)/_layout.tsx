@@ -30,10 +30,9 @@ export default function TabLayout() {
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label selectedStyle={{color: 'black'}}>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person', selected: 'person.fill' }}
-          selectedColor="black"
         />
       </NativeTabs.Trigger>
     </NativeTabs>
