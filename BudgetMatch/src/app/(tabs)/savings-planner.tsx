@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Alert, TouchableOpacity } from 'react-native';
 import type { NativeScrollEvent, NativeSyntheticEvent, ScrollViewInstance } from 'react-native';
 import CircularProgress from 'react-native-circular-progress-indicator';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Goal } from '@/types';
@@ -40,6 +41,20 @@ export default function SavingsPlannerPage() {
 
   // store goals
   const [goals, setGoals] = useState<Goal[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!DataManager.pageLoadStates['savings-planner']) {
+        const existingGoals = DataManager.goals;
+        setGoals([...existingGoals]);
+
+        let totalContribution = 0;
+        existingGoals.forEach(existingGoal => (totalContribution += existingGoal.contribution));
+        setContributionRemaining(contributionRemaining - totalContribution);
+
+        DataManager.pageLoadStates['savings-planner'] = true;
+      }
+    }, [])
+  );
 
   const [isFormValid, setIsFormValid] = useState({
     goal: true,
@@ -50,17 +65,6 @@ export default function SavingsPlannerPage() {
 
   const amountRegexPattern = /^\d*\.?\d{0,2}$/;
   const contributionRegexPattern = /^\d*\.?\d*$/;
-
-  // only do this on first render
-  useEffect(() => {
-    // instantiate default goals
-    const existingGoals = DataManager.goals;
-    setGoals([...existingGoals]);
-
-    let totalContribution = 0;
-    existingGoals.forEach(existingGoal => (totalContribution += existingGoal.contribution));
-    setContributionRemaining(contributionRemaining - totalContribution);
-  }, []);
 
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {

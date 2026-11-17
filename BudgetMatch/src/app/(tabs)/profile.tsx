@@ -15,27 +15,25 @@ export default function Index() {
   }
 
   const logout = async () => {
-    await DataManager.saveData();
     router.replace("/");
   }
 
   return (
     <View style={styles.page}>
       <Text style={styles.pageTitle}>Profile</Text>
-      {/* <Image source={require('../../../assets/images/profile-icon3.png')} style={styles.image} resizeMode="contain" /> */}
       <View style={styles.form}>
-              <Text style={styles.formLabel}>Username</Text>
-              <TextInput style={styles.formField} editable={false} value={"TestUser"}/>
-              <Text style={styles.formLabel}>First Name</Text>
-              <TextInput style={styles.formField} editable={false} value={"Test"}/>
-              <Text style={styles.formLabel}>Last Name</Text>
-              <TextInput style={styles.formField} editable={false} value={"User"}/>
-              <Text style={styles.formLabel}>Email</Text>
-              <TextInput style={styles.formField} editable={false} value={"budgetmatchtestuser@gmail.com"}/>
-              <Pressable style={styles.formButton} onPress={logout}>
-                <Text style={[styles.formLabel, styles.formButtonText]}>Log Out</Text>
-              </Pressable>
-            </View>
+        <Text style={styles.formLabel}>Username</Text>
+        <TextInput style={styles.formField} editable={false} value={"TestUser"}/>
+        <Text style={styles.formLabel}>First Name</Text>
+        <TextInput style={styles.formField} editable={false} value={"Test"}/>
+        <Text style={styles.formLabel}>Last Name</Text>
+        <TextInput style={styles.formField} editable={false} value={"User"}/>
+        <Text style={styles.formLabel}>Email</Text>
+        <TextInput style={styles.formField} editable={false} value={"budgetmatchtestuser@gmail.com"}/>
+        <Pressable style={styles.formButton} onPress={logout}>
+          <Text style={[styles.formLabel, styles.formButtonText]}>Log Out</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

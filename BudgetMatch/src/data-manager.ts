@@ -2,21 +2,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Expense, Budget, Goal } from './types';
 import mockExpenses from './mockExpenses.json';
+import mockBudgets from './mockBudgets.json';
+import mockGoals from './mockGoals.json';
 
 export default class DataManager {
     static expenses: Expense[] = [];
     static budgets: Budget[] = [];
     static goals: Goal[] = [];
 
+    static pageLoadStates = {
+        'budget-builder': false,
+        'savings-planner': false
+    };
+
     static async loadData() {
         const savedExpenses = await AsyncStorage.getItem('expenses');
         DataManager.expenses = (savedExpenses === null) ? mockExpenses : JSON.parse(savedExpenses);
 
-        const savedBudgets = await AsyncStorage.getItem('budgets');
-        DataManager.budgets = (savedBudgets === null) ? [] : JSON.parse(savedBudgets);
+        DataManager.budgets = [...mockBudgets];
+        DataManager.goals = [...mockGoals];
 
-        const savedGoals = await AsyncStorage.getItem('goals');
-        DataManager.goals = (savedGoals === null) ? [] :  JSON.parse(savedGoals);
+        DataManager.pageLoadStates['budget-builder'] = false;
+        DataManager.pageLoadStates['savings-planner'] = false;
     }
 
     static addBudget(budget: Budget) {
@@ -53,16 +60,5 @@ export default class DataManager {
     static deleteGoal(name: string) {
         let index = DataManager.goals.findIndex(goal => goal.name === name);
         DataManager.goals.splice(index, 1);
-    }
-
-    static async saveData() {
-        const currentExpenses = JSON.stringify(DataManager.expenses);
-        await AsyncStorage.setItem('expenses', currentExpenses);
-
-        const currentBudgets = JSON.stringify(DataManager.budgets);
-        await AsyncStorage.setItem('budgets', currentBudgets);
-
-        const currentGoals = JSON.stringify(DataManager.goals);
-        await AsyncStorage.setItem('goals', currentGoals);
     }
 }
