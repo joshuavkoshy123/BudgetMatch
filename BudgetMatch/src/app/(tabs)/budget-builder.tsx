@@ -52,7 +52,6 @@ export default function BudgetBuilderPage() {
   useEffect(() => {
     // instantiate default notifications
     const defaultNotifications: Notification[] = notifications;
-    defaultNotifications.push({message: 'You have reached 80% of your Entertainment budget.', timestamp: '11/12/2026 10:00 AM'});
     defaultNotifications.push({message: 'You have reached 95% of your Groceries budget.', timestamp: '11/04/2026 12:30 PM'});
     defaultNotifications.push({message: 'You have reached 90% of your Fitness budget.', timestamp: '10/26/2026 3:45 PM'});
 
@@ -62,6 +61,11 @@ export default function BudgetBuilderPage() {
   const [spendingCategories, setSpendingCategories] = useState<string[]>([]);
   useFocusEffect(
     useCallback(() => {
+      if (!DataManager.pageLoadStates['budget-builder']) {
+        setBudgets([...(DataManager.budgets)]);
+        DataManager.pageLoadStates['budget-builder'] = true;
+      }
+
       const categories: string[] = [];
       DataManager.expenses.forEach(expense => {
         if (!categories.includes(expense.category)) {
@@ -81,12 +85,6 @@ export default function BudgetBuilderPage() {
 
   const amountRegexPattern = /^\d*\.?\d{0,2}$/;
   const notificationThresholdRegexPattern = /^\d*\.?\d*$/;
-
-  // only do this on first render
-  useEffect(() => {
-    // instantiate default budgets
-    setBudgets([...(DataManager.budgets)]);
-  }, []);
 
   // Wait until fonts are fully loaded before rendering
   if (!fontsLoaded) {

@@ -1,0 +1,16 @@
+[
+    {
+        "budgetingCategory": "Fitness",
+        "amount": 250,
+        "spendingCategory": "Fitness",
+        "notification": "Yes",
+        "notificationThreshold": 90
+    },
+    {
+        "budgetingCategory": "Groceries",
+        "amount": 300,
+        "spendingCategory": "Groceries",
+        "notification": "Yes",
+        "notificationThreshold": 95
+    }
+]
