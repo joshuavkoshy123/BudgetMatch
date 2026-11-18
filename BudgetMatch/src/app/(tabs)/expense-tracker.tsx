@@ -1,14 +1,21 @@
-import { useState } from 'react';
-import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Text, View, StyleSheet, ScrollView, ActivityIndicator, Modal, Pressable, TextInput, Keyboard, KeyboardAvoidingView, ScrollViewInstance, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
+import Svg, { Path, Polyline, Circle, Line, G, Text as SvgText } from 'react-native-svg';
 import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_700Bold } from '@expo-google-fonts/ibm-plex-sans';
+import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+import { Expense } from '@/types';
+import DataManager from '@/data-manager';
+
+// Get Month Date
+const getMonthDate = (amount: number) => {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth() - amount, 1)
+    .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+}
 
 export default function ExpenseTrackerPage() {
-  type Expense = {
-    description: string;
-    amount: number;
-    category: string;
-  }
   type CategoryTotal = {
     category: string;
     total: number;
@@ -17,40 +24,87 @@ export default function ExpenseTrackerPage() {
     category: string;
     path: string;
   }
-  const [addModalShown, setAddModalShown] = useState(false);
-
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('Groceries');
-  const [customCategory, setCustomCategory] = useState('');
+  type ChartLine = {
+    category: string;
+    points: string;
+  }
 
   const [fontsLoaded] = useFonts({
     IBMPlexSans_400Regular,
     IBMPlexSans_700Bold,
   });
 
-  // store expenses
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isAtPageTop, setIsAtPageTop] = useState(true);
+  const [layoutHeight, setLayoutHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const isPageScrollable = layoutHeight > 0 && contentHeight > layoutHeight + 10;
 
-  const [isFormValid, setIsFormValid] = useState({
-    amount: true,
-    customCategory: true
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  const handleScrollEvent = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setIsAtPageTop(offsetY <= 10);
+  };
+
+  // store expenses
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+
+  // Next 5 Months
+  const monthOptions: string[] = [];
+  for (let month = 12; month >= 0; month--) {
+    monthOptions.push(getMonthDate(month));
+  }
+
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[monthOptions.length - 1]);
+  const [monthMenuOpen, setMonthMenuOpen] = useState(false);
+
+  const selectedMonthIndex = monthOptions.indexOf(selectedMonth);
+  const chartMonthOptions: string[] = [];
+  for (let monthsBeforeSelected = 5; monthsBeforeSelected >= 0; monthsBeforeSelected--) {
+    const monthIndex = selectedMonthIndex - monthsBeforeSelected;
+    chartMonthOptions.push(
+      monthOptions[monthIndex] ?? getMonthDate(monthOptions.length - 1 - monthIndex)
+    );
+  }
+
+  const [category, setCategory] = useState('');
+  const [oldCategory, setOldCategory] = useState('');
+  const [isCategoryValid, setIsCategoryValid] = useState(true);
+  const [editModalShown, setEditModalShown] = useState(false);
+
+  const [budgetingCategories, setBudgetingCategories] = useState<string[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      setBudgetingCategories(DataManager.budgets.map(budget => budget.budgetingCategory));
+    }, [])
+  );
+
+  // Only show expenses from month
+  const expenses = allExpenses.filter(expense => {
+    const date = new Date(Date.parse(expense.timestamp));
+    const formattedDate = new Date(date.getFullYear(), date.getMonth(), 1)
+      .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+    return formattedDate === selectedMonth;
   });
 
-  const amountRegexPattern = /^\d*\.?\d{0,2}$/;
+  // only do this on first render
+  useEffect(() => {
+    // instantiate default expenses
+    setAllExpenses([...(DataManager.expenses)]);
+  }, []);
 
   // colors for each spending category
-  const categoryColors: Record<string, string> = {
+  const [categoryColors, setCategoryColors] = useState<Record<string, string>>({
     Housing: '#4E79A7',
     Groceries: '#F28E2B',
     Transportation: '#E15759',
     Dining: '#76B7B2',
     Shopping: '#59A14F',
     Entertainment: '#EDC948',
-    Health: '#B07AA1',
+    Fitness: '#B07AA1',
     Bills: '#FF9DA7',
     Other: '#9C755F',
-  };
+  });
   const categories = Object.keys(categoryColors);
 
   // Wait until fonts are fully loaded before rendering
@@ -66,65 +120,27 @@ export default function ExpenseTrackerPage() {
     return categoryColors.Other;
   }
 
-  // add expense to list of expenses
-  const addExpense = () => {
+  const closeEditModal = () => {
+    
+    // close modal and reset variables
+    setCategory('');
 
-    // validate user input for form fields
-    let isCurrentFormValid = {
-      amount: true,
-      customCategory: true
-    };
+    setIsCategoryValid(true);
+    setEditModalShown(false);
+  }
 
-    if (amount.length === 0 || isNaN(Number(amount)) || Number(amount) <= 0) {
-      isCurrentFormValid.amount = false;
-    }
-    if (category === 'Other' && customCategory.trim().length === 0) {
-      isCurrentFormValid.customCategory = false;
-    }
-
-    setIsFormValid(isCurrentFormValid);
-    if (Object.values(isCurrentFormValid).some(valid => !valid)) {
+  const editCategory = () => {
+    if (category.length === 0) {
+      setIsCategoryValid(false);
       return;
     }
 
-    let finalCategory = category;
-    if (category === 'Other') {
-      finalCategory = customCategory.trim();
-    }
+    const { [oldCategory]: value, ...rest } = categoryColors;
+    setCategoryColors({ ...rest, [category]: value });
 
-    // default the description to the category if left blank
-    let finalDescription = description.trim();
-    if (finalDescription.length === 0) {
-      finalDescription = finalCategory;
-    }
+    DataManager.editExpenseCategory(oldCategory, category);
 
-    const newExpense = {
-      description: finalDescription,
-      amount: Number(amount),
-      category: finalCategory
-    };
-
-    setExpenses(currentExpenses => [...currentExpenses, newExpense]);
-    setAddModalShown(false);
-
-    setDescription('');
-    setAmount('');
-    setCategory('Groceries');
-    setCustomCategory('');
-  }
-
-  const closeAddModal = () => {
-    
-    // close modal and reset variables
-    setAddModalShown(false);
-    setDescription('');
-    setAmount('');
-    setCategory('Groceries');
-    setCustomCategory('');
-    setIsFormValid({
-      amount: true,
-      customCategory: true
-    });
+    setEditModalShown(false);
   }
 
   // calculate total spent and spending by category
@@ -173,6 +189,57 @@ export default function ExpenseTrackerPage() {
     startAngle = endAngle;
   }
 
+  // find every category that has expense
+  const chartCategories: string[] = [];
+
+  for (let i = 0; i < allExpenses.length; i++){
+    if (!chartCategories.includes(allExpenses[i].category)) {
+      chartCategories.push(allExpenses[i].category);
+    }
+  }
+
+  // total spent per category
+  const monthTotals: number[][] = [];
+  let highestTotal = 1;
+
+  for (let i = 0; i < chartCategories.length; i++){
+    const totals: number[] = [];
+
+    for (let j = 0; j < chartMonthOptions.length; j++){
+      let total = 0;
+      for (let k = 0; k < allExpenses.length; k++){
+        const date = new Date(Date.parse(allExpenses[k].timestamp));
+        const formattedDate = new Date(date.getFullYear(), date.getMonth(), 1)
+          .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+        if (allExpenses[k].category === chartCategories[i] && formattedDate === chartMonthOptions[j]) {
+          total += allExpenses[k].amount;
+        }
+      }
+
+      totals.push(total);
+      if (total > highestTotal) {
+        highestTotal = total;
+      }
+    }
+    monthTotals.push(totals);
+  }
+
+  // position month amount on the line chart
+  const getChartX = (monthIndex: number) => 40 + monthIndex * 50;
+  const getChartY = (value: number) => 165 - (value / highestTotal) * 150;
+
+  // build line chart lines
+  const chartLines: ChartLine[] = [];
+
+  for (let i = 0; i < chartCategories.length; i++){
+    let points = '';
+    for (let j = 0; j < chartMonthOptions.length; j++){
+      points += `${getChartX(j)},${getChartY(monthTotals[i][j])} `;
+    }
+    chartLines.push({category: chartCategories[i], points: points});
+  }
+
   // sort expenses so the newest is shown first
   const recentExpenses: Expense[] = [];
 
@@ -186,11 +253,37 @@ export default function ExpenseTrackerPage() {
         <Text style={styles.headingText}>Expense Tracker</Text>
       </View>
 
+      {/* dropdown */}
+      <View style={styles.monthDropdown}>
+        <Pressable style={styles.monthButton} onPress={() => setMonthMenuOpen(!monthMenuOpen)}>
+          <Text style={styles.monthText}>{selectedMonth} ▼</Text>
+        </Pressable>
+        {monthMenuOpen && monthOptions.map(month => (
+          <Pressable
+            key={month}
+            style={styles.monthOption}
+            onPress={() => {
+              setSelectedMonth(month);
+              setMonthMenuOpen(false);
+            }}
+          >
+            <Text>{month}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
-      >
+        ref={scrollViewRef}
+        onScroll={handleScrollEvent}
+        onLayout={(e) => {
+          setLayoutHeight(e.nativeEvent.layout.height);
+        }}
+        onContentSizeChange={(_, height) => {
+          setContentHeight(height);
+        }}>
         <View style={styles.totalCard}>
           <Text style={styles.sectionLabel}>Total Spent</Text>
           <Text style={styles.totalAmount}>${totalSpent.toFixed(2)}</Text>
@@ -230,16 +323,30 @@ export default function ExpenseTrackerPage() {
               </View>
 
               <View style={styles.legend}>
-                {spendingByCategory.map(item => (
-                  <View key={item.category} style={styles.categoryRow}>
+                {spendingByCategory.map(item => {
+                  const isBudgetSet: boolean = budgetingCategories.includes(item.category);
+
+                  return <View key={item.category} style={styles.categoryRow}>
                     <View style={styles.categoryNameContainer}>
+                      <Pressable onPress={() => {
+                        setCategory(item.category);
+                        setOldCategory(item.category);
+                        setEditModalShown(true);
+                      }}>
+                        <Ionicons name="create-outline" color="white" size={20} />
+                      </Pressable>
                       <View
                         style={[
                           styles.categoryDot,
                           { backgroundColor: getCategoryColor(item.category) },
                         ]}
                       />
-                      <Text style={styles.categoryName}>{item.category}</Text>
+                      <View style={styles.categoryDetails}>
+                        <Text style={styles.categoryName}>{item.category}</Text>
+                        <Text style={isBudgetSet ? styles.categoryText1 : styles.categoryText2}>
+                          {isBudgetSet ? 'Budgeted' : 'Not budgeted'}
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.categoryValues}>
                       <Text style={styles.categoryAmount}>${item.total.toFixed(2)}</Text>
@@ -247,10 +354,44 @@ export default function ExpenseTrackerPage() {
                         {((item.total / totalSpent) * 100).toFixed(1)}%
                       </Text>
                     </View>
-                  </View>
-                ))}
+                  </View>;
+                })}
               </View>
             </>
+          )}
+        </View>
+
+        <View style={styles.lineChartPanel}>
+          <Text style={styles.lineChartTitle}>Spending by Month</Text>
+
+          {allExpenses.length === 0 ? (
+            <Text style={styles.emptyListText}>Add expenses to see your spending over time.</Text>
+          ) : (
+            <Svg width="95%" height={200} viewBox="-10 0 315 200">
+              {[0, 0.5, 1].map(fraction => (
+                <G key={fraction}>
+                  <Line x1={35} x2={295} y1={getChartY(highestTotal * fraction)} y2={getChartY(highestTotal * fraction)} stroke="#DDDDDD" />
+                  <SvgText x={30} y={getChartY(highestTotal * fraction) + 4} fontSize={16} fill="#666666" textAnchor="end">
+                    {'$' + Math.round(highestTotal * fraction)}
+                  </SvgText>
+                </G>
+              ))}
+
+              {chartMonthOptions.map((month, index) => (
+                <SvgText key={month} x={getChartX(index)} y={188} fontSize={16} fill="#666666" textAnchor="middle">
+                  {month.slice(0, 3)}
+                </SvgText>
+              ))}
+
+              {chartLines.map((line, i) => (
+                <G key={line.category}>
+                  <Polyline points={line.points} fill="none" stroke={getCategoryColor(line.category)} strokeWidth={3} />
+                  {chartMonthOptions.map((month, j) => (
+                    <Circle key={month} cx={getChartX(j)} cy={getChartY(monthTotals[i][j])} r={4.5} fill={getCategoryColor(line.category)} />
+                  ))}
+                </G>
+              ))}
+            </Svg>
           )}
         </View>
 
@@ -272,40 +413,48 @@ export default function ExpenseTrackerPage() {
                       { backgroundColor: getCategoryColor(expense.category) },
                     ]}
                   />
-                  <View style={styles.expenseTextContainer}>
+                  <View style={styles.expenseLeftTextContainer}>
                     <Text style={styles.expenseDescription}>{expense.description}</Text>
                     <Text style={styles.expenseCategory}>{expense.category}</Text>
                   </View>
                 </View>
-                <Text style={styles.expenseAmount}>-${expense.amount.toFixed(2)}</Text>
+                <View style={styles.expenseRightTextContainer}>
+                  <Text style={styles.expenseAmount}>-${expense.amount.toFixed(2)}</Text>
+                  <Text style={styles.expenseDate}>{(new Date(expense.timestamp)).toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric',
+                  })}</Text>
+                </View>
               </View>
             ))
           )}
         </View>
-
-        <Pressable
-          style={styles.addExpenseButton}
-          onPress={() => setAddModalShown(true)}
-        >
-          <Text style={styles.addExpenseButtonText}>+ Add an Expense</Text>
-        </Pressable>
       </ScrollView>
+      {isAtPageTop && isPageScrollable && (
+        <TouchableOpacity
+          style={styles.arrowContainer}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.arrowText}>↓</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Modal for adding expense */}
       <Modal
-        visible={addModalShown}
+        visible={editModalShown}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setAddModalShown(false)}
+        onRequestClose={() => setEditModalShown(false)}
       >
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Add Expense</Text>
+                <Text style={styles.modalTitle}>Edit Category</Text>
 
                 <Pressable
-                  onPress={closeAddModal}
+                  onPress={closeEditModal}
                   style={styles.closeButton}
                   hitSlop={10}
                 >
@@ -313,70 +462,21 @@ export default function ExpenseTrackerPage() {
                 </Pressable>
               </View>
 
-              <Text style={styles.modalLabel}>Description (optional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Weekly grocery shopping"
-                value={description}
-                onChangeText={setDescription}
-              />
-
-              <Text style={styles.modalLabel}>Amount ($)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 85.50"
-                value={amount}
-                onChangeText={value => {
-                  if (amountRegexPattern.test(value)) {
-                    setAmount(value);
-                  }
-                }}
-                keyboardType="decimal-pad"
-              />
-              {isFormValid.amount ? <></> : <Text style={styles.errorText}>Please enter a valid amount.</Text>}
-
               <Text style={styles.modalLabel}>Category</Text>
-              <View style={styles.categoryOptions}>
-                {categories.map(item => (
-                  <Pressable
-                    key={item}
-                    onPress={() => setCategory(item)}
-                    style={[
-                      styles.categoryOption,
-                      category === item && styles.categoryOptionSelected
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryOptionText,
-                        category === item && styles.categoryOptionTextSelected
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* Only display custom category input field if user selects Other */}
-              {category === 'Other' &&
-                <View style={styles.customCategoryPanel}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter a category"
-                    value={customCategory}
-                    onChangeText={setCustomCategory}
-                  />
-                  {isFormValid.customCategory ? <></> : <Text style={styles.errorText}>Please enter a category.</Text>}
-                </View>
-              }
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Transportation"
+                value={category}
+                onChangeText={setCategory}
+              />
+              {isCategoryValid ? <></> : <Text style={styles.errorText}>Please enter a valid category.</Text>}
 
               <View style={styles.submitPanel}>
                 <Pressable
                   style={styles.createExpenseButton}
-                  onPress={addExpense}
+                  onPress={editCategory}
                 >
-                  <Text style={styles.createExpenseButtonText}>Save Expense</Text>
+                  <Text style={styles.createExpenseButtonText}>Save</Text>
                 </Pressable>
               </View>
             </View>
@@ -405,6 +505,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 30,
     fontFamily: 'IBMPlexSans_700Bold',
+  },
+  monthDropdown: {
+    marginBottom: 16,
+  },
+  monthButton: {
+    backgroundColor: '#043574',
+    borderRadius: 12,
+    padding: 12,
+  },
+  monthText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'IBMPlexSans_700Bold',
+  },
+  monthOption: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
   },
   content: {
     width: '100%',
@@ -516,6 +635,9 @@ const styles = StyleSheet.create({
     gap: 9,
     flex: 1,
   },
+  categoryDetails: {
+    flex: 1
+  },
   categoryDot: {
     width: 12,
     height: 12,
@@ -525,6 +647,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontFamily: 'IBMPlexSans_400Regular',
+  },
+  categoryText1: {
+    color: 'green',
+    fontSize: 12,
+  },
+  categoryText2: {
+    color: 'red',
+    fontSize: 12,
   },
   categoryValues: {
     alignItems: 'flex-end',
@@ -538,6 +668,20 @@ const styles = StyleSheet.create({
   categoryPercentage: {
     color: '#D9E7F8',
     fontSize: 12,
+  },
+  lineChartPanel: {
+    width: '90%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingInline: 18,
+    paddingTop: 15,
+    paddingBottom: 8
+  },
+  lineChartTitle: {
+    color: '#25292e',
+    fontSize: 20,
+    fontFamily: 'IBMPlexSans_700Bold',
+    marginBottom: 8,
   },
   expensesPanel: {
     width: '90%',
@@ -574,8 +718,11 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  expenseTextContainer: {
+  expenseLeftTextContainer: {
     flex: 1,
+  },
+  expenseRightTextContainer: {
+    justifyContent: 'flex-end',
   },
   expenseDescription: {
     color: '#25292e',
@@ -592,6 +739,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'IBMPlexSans_700Bold',
     marginLeft: 8,
+    textAlign: 'right'
+  },
+  expenseDate: {
+    color: '#777777',
+    fontSize: 12,
+    marginLeft: 8,
+    textAlign: 'right'
   },
   addExpenseButton: {
     width: '90%',
@@ -714,4 +868,26 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+
+  arrowContainer: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4
+  },
+  arrowText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold'
+  }
 });
